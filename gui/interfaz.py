@@ -10,11 +10,10 @@ class AppSimulacion(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Simulación - Playa de Estacionamiento Privada")
-        self.geometry("1450x750") 
+        self.geometry("1500x750") 
         
         self.vector_completo = []
 
-        # --- ESTILO DE TABLA PROFESIONAL CON CUADRÍCULA ---
         style = ttk.Style()
         style.theme_use("default")
         style.configure("Treeview", 
@@ -49,10 +48,10 @@ class AppSimulacion(ctk.CTk):
         self.main_frame = ctk.CTkFrame(self)
         self.main_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
-        ctk.CTkLabel(self.main_frame, text="Vector de Estado con Línea de Tiempos Futuros", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=5)
+        ctk.CTkLabel(self.main_frame, text="Vector de Estado - Servidor con Identificación de Vehículos", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=5)
 
-        # Columnas base organizadas (Incluye Próx. Llegada y Fin Cobro bien definidos)
-        columnas_base = ("pos", "evento", "reloj", "rnd_t", "tipo", "rnd_e", "t_est", "prox_lleg", "est_playa", "cap", "caja1", "fin_cobro", "caja2", "cola")
+        # Columnas base organizadas incluyendo la nueva columna 'auto_cobro'
+        columnas_base = ("pos", "evento", "reloj", "rnd_t", "tipo", "rnd_e", "t_est", "prox_lleg", "est_playa", "cap", "caja1", "auto_cobro", "fin_cobro", "caja2", "cola")
         columnas_sectores = tuple(f"sec_{i}" for i in range(1, 11))
         self.columnas = columnas_base + columnas_sectores
         
@@ -67,22 +66,23 @@ class AppSimulacion(ctk.CTk):
         scroll_x.pack(side="bottom", fill="x")
         scroll_y.pack(side="right", fill="y")
 
-        # Nombres claros para que el usuario identifique los eventos futuros inmediatamente
         encabezados = {
             "pos": "N° Fila", "evento": "Evento", "reloj": "Reloj (min)", 
-            "rnd_t": "RND Tipo", "tipo": "Tipo Auto", "rnd_e": "RND Est.", 
+            "rnd_t": "RND Tipo", "tipo": "Tipo/Id Auto", "rnd_e": "RND Est.", 
             "t_est": "Tiempo Est.", "prox_lleg": "PRÓX. LLEGADA", "est_playa": "Playa",
-            "cap": "Cant Autos", "caja1": "Lugar 1", "fin_cobro": "FIN COBRO (Caja)", "caja2": "Lugar 2", "cola": "Cola Cobro"
+            "cap": "Cant Autos", "caja1": "Servidor", 
+            "auto_cobro": "AUTO EN COBRO",   # <--- ENCABEZADO NUEVO
+            "fin_cobro": "FIN COBRO", "caja2": "Espacio Cola", "cola": "Cant Cola"
         }
         
         for col, texto in encabezados.items():
             self.tabla.heading(col, text=texto)
-            self.tabla.column(col, width=105 if "LLEGADA" in texto or "COBRO" in texto else 90, anchor="center")
+            self.tabla.column(col, width=110 if "COBRO" in texto or "LLEGADA" in texto else 85, anchor="center")
             
         for i in range(1, 11):
             col_name = f"sec_{i}"
             self.tabla.heading(col_name, text=f"Sector {i}")
-            self.tabla.column(col_name, width=140, anchor="center")
+            self.tabla.column(col_name, width=145, anchor="center")
 
         self.tabla.pack(fill="both", expand=True, padx=5, pady=5)
         self.tabla.bind("<ButtonRelease-1>", self.on_fila_clic)
@@ -121,36 +121,34 @@ class AppSimulacion(ctk.CTk):
             filas_filtradas.append(ultima_fila)
 
         for f in filas_filtradas:
-            # Reemplazar valores vacíos de fin de cobro por un guión legible
             fc = f["fin_cobro_lugar_1"] if f["fin_cobro_lugar_1"] is not None else "-"
             
             valores_fila = [
                 f["posicion"], f["evento"], f["reloj"], f["rnd_tipo"], f["tipo_vehiculo"],
                 f["rnd_tiempo_est"], f["tiempo_est"], f["proxima_llegada"], f["estado_playa"],
-                f["capacidad_actual"], f["estado_lugar_1"], fc, f["estado_lugar_2"], f["cola_cobro"]
+                f["capacidad_actual"], f["estado_lugar_1"], 
+                f["auto_en_cobro"], # <--- INYECCIÓN DEL VALOR EN LA TABLA
+                fc, f["estado_lugar_2"], f["cola_cobro"]
             ]
             
             for i in range(1, 11):
                 sec = f["sectores"][i]
                 if sec["estado"] == "Estacionado":
-                    # LÍNEA DE EVENTO EXPÓSITA: [Tipo] h_evento (Ej: [Peq] Fin:156.2)
-                    texto_celda = f"[{sec['tipo_auto'][:3]}] Fin:{sec['fin']}"
+                    # Muestra ejemplo: "Auto 3 [Peq] F:120.0"
+                    texto_celda = f"{sec['id_auto']} [{sec['tipo_auto'][:3]}] F:{sec['fin']}"
                 elif sec["estado"] == "Bloqueado":
-                    texto_celda = f"[{sec['tipo_auto'][:3]}] BLOQUEADO"
+                    texto_celda = f"{sec['id_auto']} BLOQUEADO"
                 else:
                     texto_celda = "Libre"
                 valores_fila.append(texto_celda)
                 
             self.tabla.insert("", "end", iid=f["posicion"], values=valores_fila)
             
-        # Cálculos de resultados finales
         tiempo_total_simulado = ultima_fila["reloj"]
         recaudacion = ultima_fila["recaudacion_total"]
-        
         tiempo_ocupacion = ultima_fila["acumulador_tiempo_ocupacion"]
         capacidad_maxima_tiempo = tiempo_total_simulado * 10
         porc_utilizacion = (tiempo_ocupacion / capacidad_maxima_tiempo * 100) if capacidad_maxima_tiempo > 0 else 0
-        
         tiempo_bloqueo = ultima_fila["acumulador_tiempo_bloqueo"]
         autos_bloqueados = ultima_fila["cant_autos_bloqueados_total"]
         promedio_espera_bloqueo = (tiempo_bloqueo / autos_bloqueados) if autos_bloqueados > 0 else 0
@@ -180,7 +178,7 @@ class AppSimulacion(ctk.CTk):
             for sec_id, datos in fila_selec["sectores"].items():
                 if datos["estado"] != "Libre":
                     algun_ocupado = True
-                    txt = f"Sector {sec_id} -> Estado: {datos['estado']} | Tipo: {datos['tipo_auto']} | Fin Est.: {datos['fin']} min"
+                    txt = f"Sector {sec_id} -> Estado: {datos['estado']} | {datos['id_auto']} ({datos['tipo_auto']}) | Fin: {datos['fin']} min"
                     ctk.CTkLabel(ventana_obj, text=txt, anchor="w", text_color="#1f538d").pack(fill="x", padx=20, pady=2)
             if not algun_ocupado:
                 ctk.CTkLabel(ventana_obj, text="Todos los sectores están libres en este instante.", text_color="gray").pack(pady=20)
