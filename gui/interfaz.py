@@ -33,7 +33,7 @@ class AppSimulacion(ctk.CTk):
 
         self.entry_x = self.crear_input("Tiempo Máximo (X minutos):", "500")
         self.entry_n = self.crear_input("Máximo de Iteraciones (N):", "100000")
-        self.entry_j = self.crear_input("Mostrar desde minuto (j):", "100")
+        self.entry_j = self.crear_input("Mostrar desde minuto (j):", "0")
         self.entry_i = self.crear_input("Cantidad de filas (i):", "50")
 
         self.btn_simular = ctk.CTkButton(self.sidebar, text="Correr Simulación", command=self.ejecutar)
@@ -51,7 +51,7 @@ class AppSimulacion(ctk.CTk):
         ctk.CTkLabel(self.main_frame, text="Vector de Estado - Servidor con Identificación de Vehículos", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=5)
 
         # Columnas base organizadas incluyendo la nueva columna 'auto_cobro'
-        columnas_base = ("pos", "evento", "reloj", "rnd_t", "tipo", "rnd_e", "t_est", "prox_lleg", "est_playa", "cap", "caja1", "auto_cobro", "fin_cobro", "caja2", "cola")
+        columnas_base = ("pos", "evento", "reloj", "rnd_lleg","rnd_t", "tipo", "rnd_e", "t_est", "tmp_lleg","prox_lleg", "est_playa", "cap", "caja1", "auto_cobro", "fin_cobro", "caja2", "cola")
         columnas_sectores = tuple(f"sec_{i}" for i in range(1, 11))
         self.columnas = columnas_base + columnas_sectores
         
@@ -67,9 +67,9 @@ class AppSimulacion(ctk.CTk):
         scroll_y.pack(side="right", fill="y")
 
         encabezados = {
-            "pos": "N° Fila", "evento": "Evento", "reloj": "Reloj (min)", 
+            "pos": "N° Fila", "evento": "Evento", "reloj": "Reloj (min)", "rnd_lleg": "RND Llegada",
             "rnd_t": "RND Tipo", "tipo": "Tipo/Id Auto", "rnd_e": "RND Est.", 
-            "t_est": "Tiempo Est.", "prox_lleg": "PRÓX. LLEGADA", "est_playa": "Playa",
+            "t_est": "Tiempo Est.", "tmp_lleg": "Tiempo Entre Llegadas","prox_lleg": "PRÓX. LLEGADA", "est_playa": "Playa",
             "cap": "Cant Autos", "caja1": "Servidor", 
             "auto_cobro": "AUTO EN COBRO",   # <--- ENCABEZADO NUEVO
             "fin_cobro": "FIN COBRO", "caja2": "Espacio Cola", "cola": "Cant Cola"
@@ -124,8 +124,8 @@ class AppSimulacion(ctk.CTk):
             fc = f["fin_cobro_lugar_1"] if f["fin_cobro_lugar_1"] is not None else "-"
             
             valores_fila = [
-                f["posicion"], f["evento"], f["reloj"], f["rnd_tipo"], f["tipo_vehiculo"],
-                f["rnd_tiempo_est"], f["tiempo_est"], f["proxima_llegada"], f["estado_playa"],
+                f["posicion"], f["evento"], f["reloj"], f["rnd_lleg"],f["rnd_tipo"], f["tipo_vehiculo"],
+                f["rnd_tiempo_est"], f["tiempo_est"], f["tiempo_entre_llegadas"],f["proxima_llegada"], f["estado_playa"],
                 f["capacidad_actual"], f["estado_lugar_1"], 
                 f["auto_en_cobro"], # <--- INYECCIÓN DEL VALOR EN LA TABLA
                 fc, f["estado_lugar_2"], f["cola_cobro"]

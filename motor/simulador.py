@@ -1,5 +1,6 @@
 # motor/simulador.py
 import random
+import math
 
 def correr_simulacion_playa(tiempo_x, max_iteraciones):
     reloj = 0.0
@@ -8,11 +9,14 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones):
     
     TARIFAS = {"Pequeño": 3000, "Grande": 4000, "Utilitario": 5000}
     
+
+    rnd_primer_llegada = round(random.random(), 4)
+    primer_llegada = round(-13*math.log(1-rnd_primer_llegada),2)
     estado_actual = {
         "posicion": 0, "evento": "Inicio", "reloj": 0.0,
-        "rnd_tipo": "-", "tipo_vehiculo": "-", "rnd_tiempo_est": "-", "tiempo_est": "-",
-        "proxima_llegada": 13.0, "estado_playa": "Libre", "capacidad_actual": 0,
-        
+        "rnd_lleg": "-", "rnd_tipo": "-", "tipo_vehiculo": "-", "rnd_tiempo_est": "-", "tiempo_est": "-",
+        "proxima_llegada": primer_llegada , "estado_playa": "Libre", "capacidad_actual": 0,
+        "tiempo_entre_llegadas": primer_llegada,
         # --- ZONA DE COBRO ---
         "estado_lugar_1": "Libre", 
         "auto_en_cobro": "-",        
@@ -49,8 +53,9 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones):
         
         nueva_fila = {
             "posicion": posicion, "evento": evento_nombre, "reloj": round(reloj, 2),
-            "rnd_tipo": "-", "tipo_vehiculo": "-", "rnd_tiempo_est": "-", "tiempo_est": "-",
+            "rnd_lleg": "-", "rnd_tipo": "-", "tipo_vehiculo": "-", "rnd_tiempo_est": "-", "tiempo_est": "-",
             "proxima_llegada": estado_actual["proxima_llegada"],
+            "tiempo_entre_llegadas": estado_actual["tiempo_entre_llegadas"],
             "estado_playa": estado_actual["estado_playa"],
             "capacidad_actual": estado_actual["capacidad_actual"],
             
@@ -77,7 +82,10 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones):
         
         if evento_nombre == "Llegada":
             nueva_fila["cant_vehiculos_llegados"] += 1
-            nueva_fila["proxima_llegada"] = round(reloj + 13.0, 2)
+            random_tiempo = random.random()
+            nueva_fila["rnd_lleg"] = round(random_tiempo, 4)
+            nueva_fila["tiempo_entre_llegadas"] = round((-13 * math.log(1-random_tiempo)), 2)
+            nueva_fila["proxima_llegada"] = round(reloj + (-13 * math.log(1-random_tiempo)), 2)
             
             if nueva_fila["capacidad_actual"] < 10:
                 contador_autos_global += 1  
