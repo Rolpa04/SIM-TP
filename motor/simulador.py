@@ -14,7 +14,7 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones):
     primer_llegada = round(-13*math.log(1-rnd_primer_llegada),2)
     estado_actual = {
         "posicion": 0, "evento": "Inicio", "reloj": 0.0,
-        "rnd_lleg": "-", "rnd_tipo": "-", "tipo_vehiculo": "-", "rnd_tiempo_est": "-", "tiempo_est": "-",
+        "rnd_lleg": rnd_primer_llegada, "rnd_tipo": "-", "tipo_vehiculo": "-", "rnd_tiempo_est": "-", "tiempo_est": "-",
         "proxima_llegada": primer_llegada , "estado_playa": "Libre", "capacidad_actual": 0,
         "tiempo_entre_llegadas": primer_llegada,
         # --- ZONA DE COBRO ---
@@ -143,7 +143,9 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones):
         elif evento_nombre == "Fin_Cobro":
             if nueva_fila["cola_cobro"] > 0:
                 nueva_fila["cola_cobro"] -= 1
+                nueva_fila["tipo_vehiculo"] = id_del_auto
                 nueva_fila["fin_cobro_lugar_1"] = round(reloj + 2.0, 2)
+                
                 
                 autos_bloqueados = [k for k, v in nueva_fila["sectores"].items() if v["estado"] == "Bloqueado"]
                 if autos_bloqueados:
@@ -158,6 +160,7 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones):
                     nueva_fila["auto_en_cobro"] = "Auto de Cola"
             else:
                 nueva_fila["estado_lugar_1"] = "Libre"
+                nueva_fila["tipo_vehiculo"] = id_del_auto
                 nueva_fila["auto_en_cobro"] = "-" 
                 nueva_fila["fin_cobro_lugar_1"] = None
                 
