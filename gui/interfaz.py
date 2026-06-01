@@ -330,14 +330,24 @@ class AppSimulacion(ctk.CTk):
         for idx, f in enumerate(filas_filtradas):
             fc = f["fin_cobro_lugar_1"] if f["fin_cobro_lugar_1"] is not None else "-"
 
+            auto_cobro = (
+                f["auto_en_cobro"]["id"]
+                if f["auto_en_cobro"] is not None
+                else "-"
+            )
+
+            cant_espera = (
+                1 if f["auto_esperando"] is not None else 0
+            )
+
             valores_fila = [
                 f["posicion"], f["evento"], f["reloj"],
                 f["rnd_lleg"], f["rnd_tipo"], f["tipo_vehiculo"],
                 f["rnd_tiempo_est"], f["tiempo_est"],
                 f["tiempo_entre_llegadas"], f["proxima_llegada"],
                 f["estado_playa"], f["capacidad_actual"],
-                f["estado_lugar_1"], f["auto_en_cobro"],
-                fc, f["estado_lugar_2"], f["cola_cobro"],
+                f["estado_lugar_1"], auto_cobro,
+                fc, f["estado_lugar_2"], cant_espera,
             ]
 
             for i in range(1, 11):
@@ -494,8 +504,16 @@ class AppSimulacion(ctk.CTk):
 
         for col, (lbl, val) in enumerate([
             ("Caja (Lugar 1)", fila_selec["estado_lugar_1"]),
-            ("Auto en Cobro",  fila_selec["auto_en_cobro"]),
-            ("Cola",           str(fila_selec["cola_cobro"])),
+            (
+                "Auto en Cobro",
+                fila_selec["auto_en_cobro"]["id"]
+                if fila_selec["auto_en_cobro"] is not None
+                else "-"
+            ),
+            (
+                "Cola",
+                "1" if fila_selec["auto_esperando"] is not None else "0"
+            ),
         ]):
             cell = ctk.CTkFrame(cobro_row, fg_color="transparent")
             cell.grid(row=0, column=col, padx=14, pady=10, sticky="w")
