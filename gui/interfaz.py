@@ -6,109 +6,316 @@ from motor.simulador import correr_simulacion_playa
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
+# ─── Paleta ────────────────────────────────────────────────────────────────────
+BG_DARK    = "#0f1117"
+BG_MID     = "#161b27"
+BG_CARD    = "#1c2233"
+BG_INPUT   = "#222840"
+ACCENT     = "#f5c842"
+ACCENT2    = "#3b82f6"
+GREEN      = "#22c55e"
+RED        = "#ef4444"
+SKY        = "#38bdf8"
+ORANGE     = "#f97316"
+MUTED      = "#4b5563"
+TEXT       = "#e2e8f0"
+TEXT2      = "#94a3b8"
+BORDER     = "#2a3347"
+
+# ─── Colores por tipo de evento (tags de Treeview) ─────────────────────────────
+TAG_LLEGADA   = "#22c55e"
+TAG_FIN_EST   = "#38bdf8"
+TAG_FIN_COBRO = "#f97316"
+TAG_INICIO    = "#6b7280"
+TAG_RECHAZADO = "#ef4444"
+TAG_BLOQUEADO = "#f59e0b"
+
+
 class AppSimulacion(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("Simulación - Playa de Estacionamiento Privada")
-        self.geometry("1500x750") 
-        
+        self.title("Simulación — Playa de Estacionamiento Privada")
+        self.geometry("1560x800")
+        self.minsize(1200, 650)
+        self.configure(fg_color=BG_DARK)
+
         self.vector_completo = []
 
+        self._build_treeview_style()
+        self._build_layout()
+
+    # ── Estilo Treeview ────────────────────────────────────────────────────────
+    def _build_treeview_style(self):
         style = ttk.Style()
         style.theme_use("default")
-        style.configure("Treeview", 
-                        background="#2a2a2a", 
-                        foreground="white", 
-                        fieldbackground="#2a2a2a",
-                        rowheight=26,
-                        gridlines="both")
-        style.map("Treeview", background=[("selected", "#1f538d")])
-        self.option_add("*Treeview.GridLines", "both")
 
-        # --- PANEL IZQUIERDO ---
-        self.sidebar = ctk.CTkFrame(self, width=280, corner_radius=0)
-        self.sidebar.pack(side="left", fill="y", padx=10, pady=10)
+        style.configure("Sim.Treeview",
+            background=BG_CARD,
+            foreground=TEXT2,
+            fieldbackground=BG_CARD,
+            rowheight=24,
+            borderwidth=0,
+            relief="flat",
+            font=("JetBrains Mono", 9) if self._font_exists("JetBrains Mono") else ("Courier New", 9),
+        )
+        style.configure("Sim.Treeview.Heading",
+            background=BG_MID,
+            foreground=TEXT2,
+            relief="flat",
+            borderwidth=0,
+            font=("Segoe UI", 8, "bold"),
+        )
+        style.map("Sim.Treeview",
+            background=[("selected", "#1e3a5f")],
+            foreground=[("selected", TEXT)],
+        )
+        style.configure("Sim.Vertical.TScrollbar",
+            background=BG_MID, troughcolor=BG_DARK,
+            borderwidth=0, arrowsize=12)
+        style.configure("Sim.Horizontal.TScrollbar",
+            background=BG_MID, troughcolor=BG_DARK,
+            borderwidth=0, arrowsize=12)
 
-        ctk.CTkLabel(self.sidebar, text="Configuración TP", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=20)
+    def _font_exists(self, name):
+        try:
+            import tkinter.font as tkfont
+            return name in tkfont.families()
+        except Exception:
+            return False
 
-        self.entry_x = self.crear_input("Tiempo Máximo (X minutos):", "500")
-        self.entry_n = self.crear_input("Máximo de Iteraciones (N):", "100000")
-        self.entry_j = self.crear_input("Mostrar desde minuto (j):", "100")
-        self.entry_i = self.crear_input("Cantidad de filas (i):", "50")
+    # ── Layout principal ───────────────────────────────────────────────────────
+    def _build_layout(self):
+        # ── Sidebar ──────────────────────────────────────────────────────────
+        self.sidebar = ctk.CTkFrame(self, width=270, corner_radius=0,
+                                    fg_color=BG_MID, border_width=0)
+        self.sidebar.pack(side="left", fill="y")
+        self.sidebar.pack_propagate(False)
 
-        self.btn_simular = ctk.CTkButton(self.sidebar, text="Correr Simulación", command=self.ejecutar)
-        self.btn_simular.pack(fill="x", padx=20, pady=20)
-        
-        self.lbl_res = ctk.CTkLabel(self.sidebar, text="Resultados Finales:", font=ctk.CTkFont(weight="bold"), justify="left")
-        self.lbl_res.pack(anchor="w", padx=20, pady=(20, 0))
-        self.txt_resultados = ctk.CTkLabel(self.sidebar, text="-\n-", justify="left")
-        self.txt_resultados.pack(anchor="w", padx=20)
+        # Título sidebar
+        title_frame = ctk.CTkFrame(self.sidebar, fg_color=BG_DARK, corner_radius=0)
+        title_frame.pack(fill="x")
+        ctk.CTkLabel(title_frame, text="🅿", font=ctk.CTkFont(size=28),
+                     text_color=ACCENT).pack(pady=(20, 0))
+        ctk.CTkLabel(title_frame, text="Playa de\nEstacionamiento",
+                     font=ctk.CTkFont(size=15, weight="bold"),
+                     text_color=TEXT).pack()
+        ctk.CTkLabel(title_frame, text="SIMULACIÓN DE EVENTOS DISCRETOS",
+                     font=ctk.CTkFont(size=8),
+                     text_color=MUTED).pack(pady=(2, 16))
 
-        # --- PANEL DERECHO: TABLA ---
-        self.main_frame = ctk.CTkFrame(self)
-        self.main_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+        # Separador
+        ctk.CTkFrame(self.sidebar, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
 
-        ctk.CTkLabel(self.main_frame, text="Vector de Estado - Servidor con Identificación de Vehículos", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=5)
+        # Configuración
+        cfg_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        cfg_frame.pack(fill="x", padx=16, pady=16)
 
-        # Columnas base organizadas incluyendo la nueva columna 'auto_cobro'
-        columnas_base = ("pos", "evento", "reloj", "rnd_t", "tipo", "rnd_e", "t_est", "prox_lleg", "est_playa", "cap", "caja1", "auto_cobro", "fin_cobro", "caja2", "cola")
+        ctk.CTkLabel(cfg_frame, text="PARÁMETROS",
+                     font=ctk.CTkFont(size=9, weight="bold"),
+                     text_color=MUTED).pack(anchor="w", pady=(0, 8))
+
+        self.entry_x = self._input(cfg_frame, "Tiempo máximo X (min)", "500")
+        self.entry_n = self._input(cfg_frame, "Iteraciones máximas (N)", "100000")
+        self.entry_j = self._input(cfg_frame, "Mostrar desde minuto (j)", "0")
+        self.entry_i = self._input(cfg_frame, "Cantidad de filas (i)", "50")
+
+        ctk.CTkFrame(self.sidebar, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
+
+        # Botón
+        btn_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        btn_frame.pack(fill="x", padx=16, pady=14)
+        self.btn_simular = ctk.CTkButton(
+            btn_frame,
+            text="▶   Correr Simulación",
+            command=self.ejecutar,
+            height=42,
+            corner_radius=8,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            fg_color=ACCENT,
+            hover_color="#d4a832",
+            text_color=BG_DARK,
+        )
+        self.btn_simular.pack(fill="x")
+
+        ctk.CTkFrame(self.sidebar, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
+
+        # Resultados
+        res_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        res_frame.pack(fill="x", padx=16, pady=14)
+
+        ctk.CTkLabel(res_frame, text="RESULTADOS FINALES",
+                     font=ctk.CTkFont(size=9, weight="bold"),
+                     text_color=MUTED).pack(anchor="w", pady=(0, 8))
+
+        self.txt_resultados = ctk.CTkLabel(
+            res_frame,
+            text="—\n—",
+            justify="left",
+            font=ctk.CTkFont(size=11),
+            text_color=TEXT2,
+            anchor="w",
+            wraplength=230,
+        )
+        self.txt_resultados.pack(anchor="w")
+
+        # ── Panel derecho ─────────────────────────────────────────────────────
+        right = ctk.CTkFrame(self, fg_color=BG_DARK, corner_radius=0)
+        right.pack(side="right", fill="both", expand=True)
+
+        # Header del panel
+        header = ctk.CTkFrame(right, fg_color=BG_MID, corner_radius=0, height=52)
+        header.pack(fill="x")
+        header.pack_propagate(False)
+        ctk.CTkLabel(
+            header,
+            text="Vector de Estado  —  Servidor con Identificación de Vehículos",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=TEXT,
+        ).pack(side="left", padx=20, pady=14)
+
+        self.lbl_rowcount = ctk.CTkLabel(header, text="", font=ctk.CTkFont(size=11),
+                                          text_color=ACCENT)
+        self.lbl_rowcount.pack(side="right", padx=20)
+
+        # Leyenda de colores
+        legend = ctk.CTkFrame(right, fg_color=BG_MID, corner_radius=0, height=28)
+        legend.pack(fill="x")
+        legend.pack_propagate(False)
+        for txt, color in [("● Llegada", TAG_LLEGADA), ("● Fin Estacionamiento", TAG_FIN_EST),
+                           ("● Fin Cobro", TAG_FIN_COBRO), ("● Bloqueado", TAG_BLOQUEADO),
+                           ("● Rechazado", TAG_RECHAZADO), ("● Inicio", TAG_INICIO)]:
+            ctk.CTkLabel(legend, text=txt, font=ctk.CTkFont(size=9),
+                         text_color=color).pack(side="left", padx=10)
+
+        # Separador
+        ctk.CTkFrame(right, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
+
+        # Tabla
+        self._build_table(right)
+
+        # Statusbar
+        statusbar = ctk.CTkFrame(right, fg_color=BG_MID, corner_radius=0, height=28)
+        statusbar.pack(fill="x", side="bottom")
+        statusbar.pack_propagate(False)
+        self.lbl_status = ctk.CTkLabel(statusbar, text="● Listo",
+                                        font=ctk.CTkFont(size=9), text_color=MUTED)
+        self.lbl_status.pack(side="left", padx=16)
+        self.lbl_status_extra = ctk.CTkLabel(statusbar, text="",
+                                              font=ctk.CTkFont(size=9), text_color=MUTED)
+        self.lbl_status_extra.pack(side="left")
+
+    # ── Helper input ──────────────────────────────────────────────────────────
+    def _input(self, parent, label, default):
+        ctk.CTkLabel(parent, text=label,
+                     font=ctk.CTkFont(size=10), text_color=TEXT2).pack(anchor="w", pady=(6, 1))
+        entry = ctk.CTkEntry(
+            parent,
+            height=34,
+            corner_radius=6,
+            border_width=1,
+            border_color=BORDER,
+            fg_color=BG_INPUT,
+            text_color=TEXT,
+            font=ctk.CTkFont(size=11, family="Courier New"),
+        )
+        entry.insert(0, default)
+        entry.pack(fill="x", pady=(0, 2))
+        return entry
+
+    # ── Tabla ─────────────────────────────────────────────────────────────────
+    def _build_table(self, parent):
+        columnas_base = (
+            "pos", "evento", "reloj", "rnd_lleg", "rnd_t", "tipo",
+            "rnd_e", "t_est", "tmp_lleg", "prox_lleg",
+            "est_playa", "cap", "caja1", "auto_cobro",
+            "fin_cobro", "caja2", "cola",
+        )
         columnas_sectores = tuple(f"sec_{i}" for i in range(1, 11))
         self.columnas = columnas_base + columnas_sectores
-        
-        scroll_x = ttk.Scrollbar(self.main_frame, orient="horizontal")
-        scroll_y = ttk.Scrollbar(self.main_frame, orient="vertical")
-        
-        self.tabla = ttk.Treeview(self.main_frame, columns=self.columnas, show="headings", 
-                                  xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
-        
+
+        table_frame = ctk.CTkFrame(parent, fg_color=BG_DARK, corner_radius=0)
+        table_frame.pack(fill="both", expand=True, padx=0, pady=0)
+
+        scroll_x = ttk.Scrollbar(table_frame, orient="horizontal", style="Sim.Horizontal.TScrollbar")
+        scroll_y = ttk.Scrollbar(table_frame, orient="vertical",   style="Sim.Vertical.TScrollbar")
+
+        self.tabla = ttk.Treeview(
+            table_frame,
+            columns=self.columnas,
+            show="headings",
+            style="Sim.Treeview",
+            xscrollcommand=scroll_x.set,
+            yscrollcommand=scroll_y.set,
+        )
+
         scroll_x.config(command=self.tabla.xview)
         scroll_y.config(command=self.tabla.yview)
         scroll_x.pack(side="bottom", fill="x")
-        scroll_y.pack(side="right", fill="y")
+        scroll_y.pack(side="right",  fill="y")
+        self.tabla.pack(fill="both", expand=True)
 
         encabezados = {
-            "pos": "N° Fila", "evento": "Evento", "reloj": "Reloj (min)", 
-            "rnd_t": "RND Tipo", "tipo": "Tipo/Id Auto", "rnd_e": "RND Est.", 
-            "t_est": "Tiempo Est.", "prox_lleg": "PRÓX. LLEGADA", "est_playa": "Playa",
-            "cap": "Cant Autos", "caja1": "Servidor", 
-            "auto_cobro": "AUTO EN COBRO",   # <--- ENCABEZADO NUEVO
-            "fin_cobro": "FIN COBRO", "caja2": "Espacio Cola", "cola": "Cant Cola"
+            "pos":        ("N° Fila",              60),
+            "evento":     ("Evento",               120),
+            "reloj":      ("Reloj (min)",           90),
+            "rnd_lleg":   ("RND Llegada",           90),
+            "rnd_t":      ("RND Tipo",              80),
+            "tipo":       ("Tipo / Id Auto",        120),
+            "rnd_e":      ("RND Est.",              80),
+            "t_est":      ("Tiempo Est.",           85),
+            "tmp_lleg":   ("T. Entre Llegadas",     110),
+            "prox_lleg":  ("Próx. Llegada",         100),
+            "est_playa":  ("Playa",                 80),
+            "cap":        ("Cant. Autos",           85),
+            "caja1":      ("Servidor",              85),
+            "auto_cobro": ("AUTO EN COBRO",         120),
+            "fin_cobro":  ("Fin Cobro",             90),
+            "caja2":      ("Espacio Cola",          95),
+            "cola":       ("Cant. Cola",            80),
         }
-        
-        for col, texto in encabezados.items():
+
+        for col, (texto, w) in encabezados.items():
             self.tabla.heading(col, text=texto)
-            self.tabla.column(col, width=110 if "COBRO" in texto or "LLEGADA" in texto else 85, anchor="center")
-            
+            self.tabla.column(col, width=w, minwidth=w, anchor="center")
+
         for i in range(1, 11):
             col_name = f"sec_{i}"
             self.tabla.heading(col_name, text=f"Sector {i}")
-            self.tabla.column(col_name, width=145, anchor="center")
+            self.tabla.column(col_name, width=155, minwidth=120, anchor="center")
 
-        self.tabla.pack(fill="both", expand=True, padx=5, pady=5)
+        # Tags de color por evento
+        self.tabla.tag_configure("tag_llegada",   foreground=TAG_LLEGADA)
+        self.tabla.tag_configure("tag_fin_est",   foreground=TAG_FIN_EST)
+        self.tabla.tag_configure("tag_fin_cobro", foreground=TAG_FIN_COBRO)
+        self.tabla.tag_configure("tag_inicio",    foreground=TAG_INICIO)
+        self.tabla.tag_configure("tag_rechazado", foreground=TAG_RECHAZADO)
+        self.tabla.tag_configure("tag_bloqueado", foreground=TAG_BLOQUEADO)
+        self.tabla.tag_configure("row_odd",       background="#191f2e")
+        self.tabla.tag_configure("row_even",      background=BG_CARD)
+
         self.tabla.bind("<ButtonRelease-1>", self.on_fila_clic)
 
-    def crear_input(self, texto, defecto):
-        ctk.CTkLabel(self.sidebar, text=texto, anchor="w").pack(fill="x", padx=20, pady=(5, 0))
-        entry = ctk.CTkEntry(self.sidebar)
-        entry.insert(0, defecto)
-        entry.pack(fill="x", padx=20, pady=(0, 5))
-        return entry
-
+    # ── Ejecutar simulación ───────────────────────────────────────────────────
     def ejecutar(self):
         try:
-            x = float(self.entry_x.get())
-            n = int(self.entry_n.get())
-            j = float(self.entry_j.get())
+            x       = float(self.entry_x.get())
+            n       = int(self.entry_n.get())
+            j       = float(self.entry_j.get())
             i_filas = int(self.entry_i.get())
         except ValueError:
-            messagebox.showerror("Error", "Por favor, ingresa números válidos.")
+            messagebox.showerror("Error", "Por favor, ingresá números válidos.")
             return
 
+        self.btn_simular.configure(state="disabled", text="Simulando...")
+        self.lbl_status.configure(text="● Simulando...", text_color=ACCENT)
+        self.update()
+
         self.vector_completo = correr_simulacion_playa(x, n)
-        
+
         for item in self.tabla.get_children():
             self.tabla.delete(item)
 
+        # Filtrar filas
         filas_filtradas = []
         contador = 0
         for fila in self.vector_completo:
@@ -120,65 +327,198 @@ class AppSimulacion(ctk.CTk):
         if ultima_fila not in filas_filtradas:
             filas_filtradas.append(ultima_fila)
 
-        for f in filas_filtradas:
+        for idx, f in enumerate(filas_filtradas):
             fc = f["fin_cobro_lugar_1"] if f["fin_cobro_lugar_1"] is not None else "-"
-            
+
+            auto_cobro = (
+                f["auto_en_cobro"]["id"]
+                if f["auto_en_cobro"] is not None
+                else "-"
+            )
+
+            cant_espera = (
+                1 if f["auto_esperando"] is not None else 0
+            )
+
             valores_fila = [
-                f["posicion"], f["evento"], f["reloj"], f["rnd_tipo"], f["tipo_vehiculo"],
-                f["rnd_tiempo_est"], f["tiempo_est"], f["proxima_llegada"], f["estado_playa"],
-                f["capacidad_actual"], f["estado_lugar_1"], 
-                f["auto_en_cobro"], # <--- INYECCIÓN DEL VALOR EN LA TABLA
-                fc, f["estado_lugar_2"], f["cola_cobro"]
+                f["posicion"], f["evento"], f["reloj"],
+                f["rnd_lleg"], f["rnd_tipo"], f["tipo_vehiculo"],
+                f["rnd_tiempo_est"], f["tiempo_est"],
+                f["tiempo_entre_llegadas"], f["proxima_llegada"],
+                f["estado_playa"], f["capacidad_actual"],
+                f["estado_lugar_1"], auto_cobro,
+                fc, f["estado_lugar_2"], cant_espera,
             ]
-            
+
             for i in range(1, 11):
                 sec = f["sectores"][i]
                 if sec["estado"] == "Estacionado":
-                    # Muestra ejemplo: "Auto 3 [Peq] F:120.0"
                     texto_celda = f"{sec['id_auto']} [{sec['tipo_auto'][:3]}] F:{sec['fin']}"
                 elif sec["estado"] == "Bloqueado":
                     texto_celda = f"{sec['id_auto']} BLOQUEADO"
                 else:
                     texto_celda = "Libre"
                 valores_fila.append(texto_celda)
-                
-            self.tabla.insert("", "end", iid=f["posicion"], values=valores_fila)
-            
-        tiempo_total_simulado = ultima_fila["reloj"]
-        recaudacion = ultima_fila["recaudacion_total"]
-        tiempo_ocupacion = ultima_fila["acumulador_tiempo_ocupacion"]
+
+            # Determinar tags
+            ev = f["evento"].lower()
+            tags = []
+            if ev == "llegada":
+                tags.append("tag_llegada")
+            elif ev.startswith("fin_est"):
+                tags.append("tag_fin_est")
+            elif ev == "fin_cobro":
+                tags.append("tag_fin_cobro")
+            elif ev == "inicio":
+                tags.append("tag_inicio")
+
+            if f["tipo_vehiculo"] == "RECHAZADO":
+                tags.append("tag_rechazado")
+
+            bloqueado = any(
+                s["estado"] == "Bloqueado" for s in f["sectores"].values()
+            )
+            if bloqueado:
+                tags.append("tag_bloqueado")
+
+            tags.append("row_odd" if idx % 2 else "row_even")
+
+            self.tabla.insert("", "end", iid=f["posicion"],
+                              values=valores_fila, tags=tags)
+
+        # Resultados en sidebar
+        tiempo_total_simulado  = ultima_fila["reloj"]
+        recaudacion            = ultima_fila["recaudacion_total"]
+        tiempo_ocupacion       = ultima_fila["acumulador_tiempo_ocupacion"]
         capacidad_maxima_tiempo = tiempo_total_simulado * 10
         porc_utilizacion = (tiempo_ocupacion / capacidad_maxima_tiempo * 100) if capacidad_maxima_tiempo > 0 else 0
-        tiempo_bloqueo = ultima_fila["acumulador_tiempo_bloqueo"]
-        autos_bloqueados = ultima_fila["cant_autos_bloqueados_total"]
+        tiempo_bloqueo     = ultima_fila["acumulador_tiempo_bloqueo"]
+        autos_bloqueados   = ultima_fila["cant_autos_bloqueados_total"]
         promedio_espera_bloqueo = (tiempo_bloqueo / autos_bloqueados) if autos_bloqueados > 0 else 0
-        
-        texto_sidebar = (
-            f"Tiempo Simulado: {tiempo_total_simulado} min\n\n"
-            f"a) Recaudación Total:\n   ${recaudacion:,.2f}\n\n"
-            f"b) Utilización Playa:\n   {porc_utilizacion:.2f}%\n\n"
-            f"c) Promedio Espera Cobro\n   en Sector: {promedio_espera_bloqueo:.2f} min\n"
-            f"   (Autos Bloqueados: {autos_bloqueados})"
-        )
-        self.txt_resultados.configure(text=texto_sidebar, justify="left")
 
+        texto_sidebar = (
+            f"Tiempo Simulado:\n  {tiempo_total_simulado} min\n\n"
+            f"a) Recaudación Total:\n  ${recaudacion:,.2f}\n\n"
+            f"b) Utilización Playa:\n  {porc_utilizacion:.2f}%\n\n"
+            f"c) Prom. Espera Cobro\n  en Sector: {promedio_espera_bloqueo:.2f} min\n"
+            f"  (Autos Bloqueados: {autos_bloqueados})"
+        )
+        self.txt_resultados.configure(text=texto_sidebar)
+
+        total_filas = len(self.vector_completo)
+        self.lbl_rowcount.configure(text=f"{total_filas} eventos totales  ·  {len(filas_filtradas)} mostradas")
+        self.lbl_status.configure(text="● Simulación completada", text_color=GREEN)
+        self.lbl_status_extra.configure(
+            text=f"   Bloqueados: {autos_bloqueados}  ·  "
+                 f"Ocup. acum.: {tiempo_ocupacion:.1f} min  ·  "
+                 f"Vehículos llegados: {ultima_fila['cant_vehiculos_llegados']}  ·  "
+                 f"Rechazados: {ultima_fila['cant_vehiculos_rechazados']}"
+        )
+        self.btn_simular.configure(state="normal", text="▶   Correr Simulación")
+
+    # ── Detalle al hacer clic en una fila ─────────────────────────────────────
     def on_fila_clic(self, event):
         item_id = self.tabla.focus()
-        if not item_id: return
-        fila_selec = next((f for f in self.vector_completo if str(f["posicion"]) == item_id), None)
-        if fila_selec:
-            ventana_obj = ctk.CTkToplevel(self)
-            ventana_obj.title(f"Detalle Completo - Fila {fila_selec['posicion']}")
-            ventana_obj.geometry("500x380")
-            ventana_obj.attributes("-topmost", True)
-            
-            ctk.CTkLabel(ventana_obj, text="Atributos de Autos en Sectores", font=ctk.CTkFont(size=15, weight="bold")).pack(pady=10)
-            
-            algun_ocupado = False
-            for sec_id, datos in fila_selec["sectores"].items():
-                if datos["estado"] != "Libre":
-                    algun_ocupado = True
-                    txt = f"Sector {sec_id} -> Estado: {datos['estado']} | {datos['id_auto']} ({datos['tipo_auto']}) | Fin: {datos['fin']} min"
-                    ctk.CTkLabel(ventana_obj, text=txt, anchor="w", text_color="#1f538d").pack(fill="x", padx=20, pady=2)
-            if not algun_ocupado:
-                ctk.CTkLabel(ventana_obj, text="Todos los sectores están libres en este instante.", text_color="gray").pack(pady=20)
+        if not item_id:
+            return
+        fila_selec = next(
+            (f for f in self.vector_completo if str(f["posicion"]) == item_id), None
+        )
+        if not fila_selec:
+            return
+
+        ventana = ctk.CTkToplevel(self)
+        ventana.title(f"Detalle — Fila {fila_selec['posicion']}")
+        ventana.geometry("540x420")
+        ventana.attributes("-topmost", True)
+        ventana.configure(fg_color=BG_DARK)
+        ventana.resizable(False, False)
+
+        # Header
+        header = ctk.CTkFrame(ventana, fg_color=BG_MID, corner_radius=0, height=52)
+        header.pack(fill="x")
+        header.pack_propagate(False)
+        ctk.CTkLabel(header,
+                     text=f"Fila {fila_selec['posicion']}  ·  {fila_selec['evento']}  ·  Reloj: {fila_selec['reloj']} min",
+                     font=ctk.CTkFont(size=12, weight="bold"),
+                     text_color=ACCENT).pack(side="left", padx=16, pady=14)
+
+        ctk.CTkFrame(ventana, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
+
+        # Contenido
+        scroll_frame = ctk.CTkScrollableFrame(ventana, fg_color=BG_DARK, corner_radius=0)
+        scroll_frame.pack(fill="both", expand=True, padx=0, pady=0)
+
+        ctk.CTkLabel(scroll_frame,
+                     text="ESTADO DE SECTORES",
+                     font=ctk.CTkFont(size=9, weight="bold"),
+                     text_color=MUTED).pack(anchor="w", padx=20, pady=(14, 6))
+
+        algun_ocupado = False
+        for sec_id, datos in fila_selec["sectores"].items():
+            if datos["estado"] != "Libre":
+                algun_ocupado = True
+                if datos["estado"] == "Bloqueado":
+                    color = TAG_BLOQUEADO
+                    icono = "⚠"
+                else:
+                    color = TAG_FIN_EST
+                    icono = "🚗"
+
+                row = ctk.CTkFrame(scroll_frame, fg_color=BG_CARD, corner_radius=6)
+                row.pack(fill="x", padx=16, pady=3)
+
+                ctk.CTkLabel(row,
+                             text=f"  {icono}  Sector {sec_id}",
+                             font=ctk.CTkFont(size=11, weight="bold"),
+                             text_color=color, width=110, anchor="w").pack(side="left", padx=(10, 0), pady=8)
+                ctk.CTkLabel(row,
+                             text=f"{datos['estado']}",
+                             font=ctk.CTkFont(size=10),
+                             text_color=color, width=90, anchor="w").pack(side="left")
+                ctk.CTkLabel(row,
+                             text=f"{datos['id_auto']}  ({datos['tipo_auto']})",
+                             font=ctk.CTkFont(size=10),
+                             text_color=TEXT2, width=160, anchor="w").pack(side="left")
+                ctk.CTkLabel(row,
+                             text=f"Fin: {datos['fin']} min",
+                             font=ctk.CTkFont(size=10, family="Courier New"),
+                             text_color=TEXT2).pack(side="left", padx=(0, 12))
+
+        if not algun_ocupado:
+            ctk.CTkLabel(scroll_frame,
+                         text="Todos los sectores están libres en este instante.",
+                         font=ctk.CTkFont(size=11),
+                         text_color=MUTED).pack(pady=30)
+
+        # Info de cobro
+        ctk.CTkFrame(scroll_frame, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x", padx=16, pady=(12, 6))
+        ctk.CTkLabel(scroll_frame,
+                     text="ZONA DE COBRO",
+                     font=ctk.CTkFont(size=9, weight="bold"),
+                     text_color=MUTED).pack(anchor="w", padx=20, pady=(0, 6))
+
+        cobro_row = ctk.CTkFrame(scroll_frame, fg_color=BG_CARD, corner_radius=6)
+        cobro_row.pack(fill="x", padx=16, pady=(0, 16))
+        cobro_row.columnconfigure((0, 1, 2), weight=1)
+
+        for col, (lbl, val) in enumerate([
+            ("Caja (Lugar 1)", fila_selec["estado_lugar_1"]),
+            (
+                "Auto en Cobro",
+                fila_selec["auto_en_cobro"]["id"]
+                if fila_selec["auto_en_cobro"] is not None
+                else "-"
+            ),
+            (
+                "Cola",
+                "1" if fila_selec["auto_esperando"] is not None else "0"
+            ),
+        ]):
+            cell = ctk.CTkFrame(cobro_row, fg_color="transparent")
+            cell.grid(row=0, column=col, padx=14, pady=10, sticky="w")
+            ctk.CTkLabel(cell, text=lbl,
+                         font=ctk.CTkFont(size=9), text_color=MUTED).pack(anchor="w")
+            ctk.CTkLabel(cell, text=val,
+                         font=ctk.CTkFont(size=12, weight="bold"),
+                         text_color=SKY).pack(anchor="w")
