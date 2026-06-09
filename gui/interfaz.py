@@ -296,17 +296,62 @@ class AppSimulacion(ctk.CTk):
 
         self.tabla.bind("<ButtonRelease-1>", self.on_fila_clic)
 
+    # ── Validar un campo numérico ─────────────────────────────────────────────
+    def _validar_campo(self, entry, nombre, permite_cero=False):
+        """Devuelve (valor_float, lista_errores)."""
+        errores = []
+        texto = entry.get().strip()
+
+        if texto == "":
+            errores.append(f"• {nombre}: no puede estar vacío.")
+            return None, errores
+
+        try:
+            valor = float(texto)
+        except ValueError:
+            errores.append(
+                f"• {nombre}: solo se permiten números (sin letras ni caracteres especiales)."
+            )
+            return None, errores
+
+        if valor < 0:
+            errores.append(f"• {nombre}: no puede ser negativo.")
+        elif valor == 0 and not permite_cero:
+            errores.append(f"• {nombre}: no puede ser 0.")
+
+        return valor, errores
+
     # ── Ejecutar simulación ───────────────────────────────────────────────────
     def ejecutar(self):
-        try:
-            x       = float(self.entry_x.get())
-            n       = int(self.entry_n.get())
-            j       = float(self.entry_j.get())
-            i_filas = int(self.entry_i.get())
-            t_lleg = float(self.entry_tlleg.get())
-        except ValueError:
-            messagebox.showerror("Error", "Por favor, ingresá números válidos.")
+        errores_totales = []
+
+        x, errs = self._validar_campo(self.entry_x, "Tiempo máximo X")
+        errores_totales.extend(errs)
+
+        n_val, errs = self._validar_campo(self.entry_n, "Iteraciones máximas N")
+        errores_totales.extend(errs)
+
+        j, errs = self._validar_campo(self.entry_j, "Mostrar desde minuto j", permite_cero=True)
+        errores_totales.extend(errs)
+
+        i_val, errs = self._validar_campo(self.entry_i, "Cantidad de filas i")
+        errores_totales.extend(errs)
+
+        t_lleg, errs = self._validar_campo(self.entry_tlleg, "Tiempo entre llegadas")
+        errores_totales.extend(errs)
+
+        if errores_totales:
+            messagebox.showerror(
+                "Error de validación",
+                "Corregí los siguientes campos:\n\n" + "\n".join(errores_totales),
+            )
             return
+
+        x = float(x)
+        n = int(n_val)
+        j = float(j)
+        i_filas = int(i_val)
+        t_lleg = float(t_lleg)
 
         self.btn_simular.configure(state="disabled", text="Simulando...")
         self.lbl_status.configure(text="● Simulando...", text_color=ACCENT)

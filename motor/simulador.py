@@ -63,7 +63,7 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada):
             "auto_en_cobro": (
                 estado_actual["auto_en_cobro"].copy()
                 if estado_actual["auto_en_cobro"] else None
-            ),
+             ),
             "fin_cobro_lugar_1": estado_actual["fin_cobro_lugar_1"],
             "estado_lugar_2": estado_actual["estado_lugar_2"],
             "auto_esperando": (
