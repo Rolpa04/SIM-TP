@@ -118,6 +118,7 @@ class AppSimulacion(ctk.CTk):
         self.entry_n = self._input(cfg_frame, "Iteraciones máximas (N)", "100000")
         self.entry_j = self._input(cfg_frame, "Mostrar desde minuto (j)", "0")
         self.entry_i = self._input(cfg_frame, "Cantidad de filas (i)", "50")
+        self.entry_tlleg = self._input(cfg_frame, "Tiempo entre llegadas (min)", "13")
 
         ctk.CTkFrame(self.sidebar, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
 
@@ -302,6 +303,7 @@ class AppSimulacion(ctk.CTk):
             n       = int(self.entry_n.get())
             j       = float(self.entry_j.get())
             i_filas = int(self.entry_i.get())
+            t_lleg = float(self.entry_tlleg.get())
         except ValueError:
             messagebox.showerror("Error", "Por favor, ingresá números válidos.")
             return
@@ -310,7 +312,7 @@ class AppSimulacion(ctk.CTk):
         self.lbl_status.configure(text="● Simulando...", text_color=ACCENT)
         self.update()
 
-        self.vector_completo = correr_simulacion_playa(x, n)
+        self.vector_completo = correr_simulacion_playa(x, n, t_lleg)
 
         for item in self.tabla.get_children():
             self.tabla.delete(item)
