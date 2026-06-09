@@ -7,7 +7,7 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada):
     posicion = 0
     contador_autos_global = 0  # Para asignarle un número único a cada auto que entra
     
-    TARIFAS = {"Pequeño": 500, "Grande": 1500, "Utilitario": 3000}
+    TARIFAS = {"Pequeño": 3000, "Grande": 4000, "Utilitario": 5000}
     
 
     rnd_primer_llegada = "-"
