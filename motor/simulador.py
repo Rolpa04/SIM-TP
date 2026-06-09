@@ -2,7 +2,7 @@
 import random
 import math
 
-def correr_simulacion_playa(tiempo_x, max_iteraciones):
+def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada):
     reloj = 0.0
     posicion = 0
     contador_autos_global = 0  # Para asignarle un número único a cada auto que entra
@@ -10,8 +10,8 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones):
     TARIFAS = {"Pequeño": 500, "Grande": 1500, "Utilitario": 3000}
     
 
-    rnd_primer_llegada = round(random.random(), 4)
-    primer_llegada = round(-13*math.log(1-rnd_primer_llegada),2)
+    rnd_primer_llegada = "-"
+    primer_llegada = tiempo_llegada
     estado_actual = {
         "posicion": 0, "evento": "Inicio", "reloj": 0.0,
         "rnd_lleg": rnd_primer_llegada, "rnd_tipo": "-", "tipo_vehiculo": "-", "rnd_tiempo_est": "-", "tiempo_est": "-",
@@ -88,10 +88,9 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones):
         
         if evento_nombre == "Llegada":
             nueva_fila["cant_vehiculos_llegados"] += 1
-            random_tiempo = random.random()
-            nueva_fila["rnd_lleg"] = round(random_tiempo, 4)
-            nueva_fila["tiempo_entre_llegadas"] = round((-13 * math.log(1-random_tiempo)), 2)
-            nueva_fila["proxima_llegada"] = round(reloj + (-13 * math.log(1-random_tiempo)), 2)
+            nueva_fila["rnd_lleg"] = "-"
+            nueva_fila["tiempo_entre_llegadas"] = tiempo_llegada
+            nueva_fila["proxima_llegada"] = round(reloj + tiempo_llegada, 2)
             
             if nueva_fila["capacidad_actual"] < 10:
                 contador_autos_global += 1  
@@ -138,7 +137,6 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones):
                 "horas": horas
             }
 
-            # Caja libre → pasa a cobrar
             if nueva_fila["estado_lugar_1"] == "Libre":
 
                 nueva_fila["estado_lugar_1"] = "Ocupado"
@@ -184,7 +182,7 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones):
             # Mostrar qué auto terminó de pagar
             nueva_fila["tipo_vehiculo"] = auto_cobrado["id"]
 
-            # Recaudación (ahora ocurre acá)
+            # Recaudación 
             nueva_fila["recaudacion_total"] += (
                 auto_cobrado["horas"] *
                 TARIFAS[auto_cobrado["tipo"]]
