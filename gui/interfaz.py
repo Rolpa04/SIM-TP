@@ -108,11 +108,11 @@ class AppSimulacion(ctk.CTk):
 
         # Configuración
         cfg_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        cfg_frame.pack(fill="x", padx=16, pady=16)
+        cfg_frame.pack(fill="x", padx=16, pady=8)
 
         ctk.CTkLabel(cfg_frame, text="PARÁMETROS",
                      font=ctk.CTkFont(size=9, weight="bold"),
-                     text_color=MUTED).pack(anchor="w", pady=(0, 8))
+                     text_color=MUTED).pack(anchor="w", pady=(0, 4))
 
         self.entry_x = self._input(cfg_frame, "Tiempo máximo X (min)", "500")
         self.entry_n = self._input(cfg_frame, "Iteraciones máximas (N)", "100000")
@@ -124,7 +124,7 @@ class AppSimulacion(ctk.CTk):
 
         # Botón
         btn_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        btn_frame.pack(fill="x", padx=16, pady=14)
+        btn_frame.pack(fill="x", padx=16, pady=10)
         self.btn_simular = ctk.CTkButton(
             btn_frame,
             text="▶   Correr Simulación",
@@ -142,11 +142,11 @@ class AppSimulacion(ctk.CTk):
 
         # Resultados
         res_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        res_frame.pack(fill="x", padx=16, pady=14)
+        res_frame.pack(fill="x", padx=16, pady=10)
 
         ctk.CTkLabel(res_frame, text="RESULTADOS FINALES",
                      font=ctk.CTkFont(size=9, weight="bold"),
-                     text_color=MUTED).pack(anchor="w", pady=(0, 8))
+                     text_color=MUTED).pack(anchor="w", pady=(0, 4))
 
         self.txt_resultados = ctk.CTkLabel(
             res_frame,
@@ -208,10 +208,10 @@ class AppSimulacion(ctk.CTk):
     # ── Helper input ──────────────────────────────────────────────────────────
     def _input(self, parent, label, default):
         ctk.CTkLabel(parent, text=label,
-                     font=ctk.CTkFont(size=10), text_color=TEXT2).pack(anchor="w", pady=(6, 1))
+                     font=ctk.CTkFont(size=10), text_color=TEXT2).pack(anchor="w", pady=(4, 0))
         entry = ctk.CTkEntry(
             parent,
-            height=34,
+            height=30,
             corner_radius=6,
             border_width=1,
             border_color=BORDER,
@@ -225,11 +225,13 @@ class AppSimulacion(ctk.CTk):
 
     # ── Tabla ─────────────────────────────────────────────────────────────────
     def _build_table(self, parent):
+        # Se agrega "cant_bloq" a la tupla base
         columnas_base = (
-            "pos", "evento", "reloj", "rnd_lleg", "rnd_t", "tipo",
+            "pos", "evento", "reloj", "rnd_t", "tipo",
             "rnd_e", "t_est", "tmp_lleg", "prox_lleg",
             "est_playa", "cap", "caja1", "auto_cobro",
-            "fin_cobro", "caja2", "cola",
+            "fin_cobro", "caja2", "cola", "monto_cobrado", "recaudacion", 
+            "acum_bloqueo", "cant_bloq"
         )
         columnas_sectores = tuple(f"sec_{i}" for i in range(1, 11))
         self.columnas = columnas_base + columnas_sectores
@@ -256,23 +258,26 @@ class AppSimulacion(ctk.CTk):
         self.tabla.pack(fill="both", expand=True)
 
         encabezados = {
-            "pos":        ("N° Fila",              60),
-            "evento":     ("Evento",               120),
-            "reloj":      ("Reloj (min)",           90),
-            "rnd_lleg":   ("RND Llegada",           90),
-            "rnd_t":      ("RND Tipo",              80),
-            "tipo":       ("Tipo / Id Auto",        120),
-            "rnd_e":      ("RND Est.",              80),
-            "t_est":      ("Tiempo Est.",           85),
-            "tmp_lleg":   ("T. Entre Llegadas",     110),
-            "prox_lleg":  ("Próx. Llegada",         100),
-            "est_playa":  ("Playa",                 80),
-            "cap":        ("Cant. Autos",           85),
-            "caja1":      ("Servidor",              85),
-            "auto_cobro": ("AUTO EN COBRO",         120),
-            "fin_cobro":  ("Fin Cobro",             90),
-            "caja2":      ("Espacio Cola",          95),
-            "cola":       ("Cant. Cola",            80),
+            "pos":           ("N° Fila",              60),
+            "evento":        ("Evento",               120),
+            "reloj":         ("Reloj (min)",           90),
+            "rnd_t":         ("RND Tipo",              80),
+            "tipo":          ("Tipo / Id Auto",        120),
+            "rnd_e":         ("RND Est.",              80),
+            "t_est":         ("Tiempo Est.",           85),
+            "tmp_lleg":      ("T. Entre Llegadas",     110),
+            "prox_lleg":     ("Próx. Llegada",         100),
+            "est_playa":     ("Playa",                 80),
+            "cap":           ("Cant. Autos",           85),
+            "caja1":         ("Servidor",              85),
+            "auto_cobro":    ("AUTO EN COBRO",         160),
+            "fin_cobro":     ("Fin Cobro",             90),
+            "caja2":         ("Espacio Cola",          95),
+            "cola":          ("AUTO EN COLA",          160),
+            "monto_cobrado": ("Tarifa Vehículo",       110),
+            "recaudacion":   ("Recaudación Acum.",     130),
+            "acum_bloqueo":  ("Tiempo Bloq. Acum.",    130),
+            "cant_bloq":     ("Cant. Bloqueados",      120),
         }
 
         for col, (texto, w) in encabezados.items():
@@ -298,7 +303,6 @@ class AppSimulacion(ctk.CTk):
 
     # ── Validar un campo numérico ─────────────────────────────────────────────
     def _validar_campo(self, entry, nombre, permite_cero=False):
-        """Devuelve (valor_float, lista_errores)."""
         errores = []
         texto = entry.get().strip()
 
@@ -377,24 +381,33 @@ class AppSimulacion(ctk.CTk):
         for idx, f in enumerate(filas_filtradas):
             fc = f["fin_cobro_lugar_1"] if f["fin_cobro_lugar_1"] is not None else "-"
 
-            auto_cobro = (
-                f["auto_en_cobro"]["id"]
-                if f["auto_en_cobro"] is not None
-                else "-"
-            )
+            if f["auto_en_cobro"] is not None:
+                ac = f["auto_en_cobro"]
+                auto_cobro = f"{ac['id']} [{ac['tipo'][:3]}] {ac['horas']}h"
+            else:
+                auto_cobro = "-"
 
-            cant_espera = (
-                1 if f["auto_esperando"] is not None else 0
-            )
+            if f["auto_esperando"] is not None:
+                ae = f["auto_esperando"]
+                auto_espera = f"{ae['id']} [{ae['tipo'][:3]}] {ae['horas']}h"
+            else:
+                auto_espera = "-"
 
+            monto_f = f"${f['monto_cobrado']:.2f}" if isinstance(f.get("monto_cobrado"), (int, float)) else "-"
+            recaud_f = f"${f['recaudacion_total']:.2f}"
+            
+            # Se agrega la variable "cant_autos_bloqueados_total" al final del array
             valores_fila = [
                 f["posicion"], f["evento"], f["reloj"],
-                f["rnd_lleg"], f["rnd_tipo"], f["tipo_vehiculo"],
+                f["rnd_tipo"], f["tipo_vehiculo"],
                 f["rnd_tiempo_est"], f["tiempo_est"],
                 f["tiempo_entre_llegadas"], f["proxima_llegada"],
                 f["estado_playa"], f["capacidad_actual"],
                 f["estado_lugar_1"], auto_cobro,
-                fc, f["estado_lugar_2"], cant_espera,
+                fc, f["estado_lugar_2"], auto_espera,
+                monto_f, recaud_f,
+                f"{f['acumulador_tiempo_bloqueo']:.2f}",
+                f["cant_autos_bloqueados_total"] # <--- NUEVO CONTADOR VISIBLE
             ]
 
             for i in range(1, 11):
@@ -444,11 +457,10 @@ class AppSimulacion(ctk.CTk):
         promedio_espera_bloqueo = (tiempo_bloqueo / autos_bloqueados) if autos_bloqueados > 0 else 0
 
         texto_sidebar = (
-            f"Tiempo Simulado:\n  {tiempo_total_simulado} min\n\n"
-            f"a) Recaudación Total:\n  ${recaudacion:,.2f}\n\n"
-            f"b) Utilización Playa:\n  {porc_utilizacion:.2f}%\n\n"
-            f"c) Prom. Espera Cobro\n  en Sector: {promedio_espera_bloqueo:.2f} min\n"
-            f"  (Autos Bloqueados: {autos_bloqueados})"
+            f"Tiempo Simulado:\n  {tiempo_total_simulado} min\n"
+            f"a) Recaudación Total:\n  ${recaudacion:,.2f}\n"
+            f"b) Utilización Playa:\n  {porc_utilizacion:.2f}%\n"
+            f"c) Prom. Espera Cobro:\n  {promedio_espera_bloqueo:.2f} min ({autos_bloqueados} bloqueados)"
         )
         self.txt_resultados.configure(text=texto_sidebar)
 
@@ -553,13 +565,15 @@ class AppSimulacion(ctk.CTk):
             ("Caja (Lugar 1)", fila_selec["estado_lugar_1"]),
             (
                 "Auto en Cobro",
-                fila_selec["auto_en_cobro"]["id"]
+                f"{fila_selec['auto_en_cobro']['id']} ({fila_selec['auto_en_cobro']['tipo'][:3]}) {fila_selec['auto_en_cobro']['horas']}h"
                 if fila_selec["auto_en_cobro"] is not None
                 else "-"
             ),
             (
-                "Cola",
-                "1" if fila_selec["auto_esperando"] is not None else "0"
+                "Auto en Cola",
+                f"{fila_selec['auto_esperando']['id']} ({fila_selec['auto_esperando']['tipo'][:3]}) {fila_selec['auto_esperando']['horas']}h"
+                if fila_selec["auto_esperando"] is not None
+                else "-"
             ),
         ]):
             cell = ctk.CTkFrame(cobro_row, fg_color="transparent")
