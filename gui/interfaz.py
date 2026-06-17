@@ -119,6 +119,9 @@ class AppSimulacion(ctk.CTk):
         self.entry_j = self._input(cfg_frame, "Mostrar desde minuto (j)", "0")
         self.entry_i = self._input(cfg_frame, "Cantidad de filas (i)", "50")
         self.entry_tlleg = self._input(cfg_frame, "Tiempo entre llegadas (min)", "13")
+        #corregidos
+        self.entradas_prob_tipo = self._input_row(cfg_frame, "Prob. Auto (%) [Peq/Gra/Uti]", ["45", "25", "30"])
+        self.entradas_prob_tiempo = self._input_row(cfg_frame, "Prob. Hs (%) [1h/2h/3h/4h]", ["50", "30", "15", "5"])
 
         ctk.CTkFrame(self.sidebar, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
 
@@ -222,6 +225,53 @@ class AppSimulacion(ctk.CTk):
         entry.insert(0, default)
         entry.pack(fill="x", pady=(0, 2))
         return entry
+    
+    def _input_row(self, parent, label, defaults):
+        ctk.CTkLabel(parent, text=label,
+                     font=ctk.CTkFont(size=10), text_color=TEXT2).pack(anchor="w", pady=(4, 0))
+        row_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        row_frame.pack(fill="x", pady=(0, 2))
+
+        entries = []
+        for default in defaults:
+            entry = ctk.CTkEntry(
+                row_frame,
+                height=30,
+                width=40,         # <--- CORRECCIÓN: Ancho base pequeño para evitar el desborde
+                justify="center", # <--- CORRECCIÓN: Centramos el texto para que se vea mejor
+                corner_radius=6,
+                border_width=1,
+                border_color=BORDER,
+                fg_color=BG_INPUT,
+                text_color=TEXT,
+                font=ctk.CTkFont(size=11, family="Courier New"),
+            )
+            entry.insert(0, default)
+            entry.pack(side="left", expand=True, fill="x", padx=2) # padx=2 separa un poquito las cajas
+            entries.append(entry)
+        return entries
+
+        ctk.CTkLabel(parent, text=label,
+                     font=ctk.CTkFont(size=10), text_color=TEXT2).pack(anchor="w", pady=(4, 0))
+        row_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        row_frame.pack(fill="x", pady=(0, 2))
+
+        entries = []
+        for default in defaults:
+            entry = ctk.CTkEntry(
+                row_frame,
+                height=30,
+                corner_radius=6,
+                border_width=1,
+                border_color=BORDER,
+                fg_color=BG_INPUT,
+                text_color=TEXT,
+                font=ctk.CTkFont(size=11, family="Courier New"),
+            )
+            entry.insert(0, default)
+            entry.pack(side="left", expand=True, fill="x", padx=1)
+            entries.append(entry)
+        return entries
 
     # ── Tabla ─────────────────────────────────────────────────────────────────
     def _build_table(self, parent):
@@ -344,6 +394,29 @@ class AppSimulacion(ctk.CTk):
         t_lleg, errs = self._validar_campo(self.entry_tlleg, "Tiempo entre llegadas")
         errores_totales.extend(errs)
 
+        # --- VALIDAR PROB. TIPOS DE AUTO ---
+        probs_tipo_num = []
+        nombres_tipo = ["Prob Peq", "Prob Gra", "Prob Uti"]
+        for entry, nombre in zip(self.entradas_prob_tipo, nombres_tipo):
+            val, errs = self._validar_campo(entry, nombre, permite_cero=True)
+            errores_totales.extend(errs)
+            if val is not None: probs_tipo_num.append(val)
+
+        if len(probs_tipo_num) == 3 and round(sum(probs_tipo_num), 2) != 100:
+            errores_totales.append("• Las probabilidades de Tipo deben sumar exactamente 100%.")
+
+        # --- VALIDAR PROB. TIEMPOS DE ESTACIONAMIENTO ---
+        probs_tiempo_num = []
+        nombres_tiempo = ["Prob 1h", "Prob 2h", "Prob 3h", "Prob 4h"]
+        for entry, nombre in zip(self.entradas_prob_tiempo, nombres_tiempo):
+            val, errs = self._validar_campo(entry, nombre, permite_cero=True)
+            errores_totales.extend(errs)
+            if val is not None: probs_tiempo_num.append(val)
+
+        if len(probs_tiempo_num) == 4 and round(sum(probs_tiempo_num), 2) != 100:
+            errores_totales.append("• Las probabilidades de Tiempo deben sumar exactamente 100%.")
+
+        # Cortar ejecución si hay errores
         if errores_totales:
             messagebox.showerror(
                 "Error de validación",
@@ -356,15 +429,22 @@ class AppSimulacion(ctk.CTk):
         j = float(j)
         i_filas = int(i_val)
         t_lleg = float(t_lleg)
+        
+        # Convertir a decimales para el motor
+        probs_tipo_dec = [p / 100.0 for p in probs_tipo_num]
+        probs_tiempo_dec = [p / 100.0 for p in probs_tiempo_num]
 
         self.btn_simular.configure(state="disabled", text="Simulando...")
         self.lbl_status.configure(text="● Simulando...", text_color=ACCENT)
         self.update()
 
-        self.vector_completo = correr_simulacion_playa(x, n, t_lleg)
-
+        # --- LLAMADA AL MOTOR ACTUALIZADA ---
+        self.vector_completo = correr_simulacion_playa(x, n, t_lleg, probs_tipo_dec, probs_tiempo_dec)
+        
         for item in self.tabla.get_children():
             self.tabla.delete(item)
+            
+        # ... (Sigue igual a partir de la lógica de filtrado de filas) ...
 
         # Filtrar filas
         filas_filtradas = []

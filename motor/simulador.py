@@ -1,7 +1,7 @@
 import random
 import math
 
-def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada):
+def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, probs_tipo, probs_tiempo):
     reloj = 0.0
     posicion = 0
     contador_autos_global = 0  
@@ -20,7 +20,6 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada):
         "estado_lugar_2": "Libre", 
         "auto_esperando": None,
         
-        # Agregamos la variable 'inicio_bloqueo' a los sectores
         "sectores": {i: {"estado": "Libre", "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None} for i in range(1, 11)},
         "cant_vehiculos_llegados": 0, "cant_vehiculos_rechazados": 0,
         "monto_cobrado": "-", 
@@ -32,6 +31,15 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada):
     }
     
     historial_vector = [estado_actual.copy()]
+    
+    # Límites acumulados de probabilidad para los Tipos de Vehículo
+    limite_peq = probs_tipo[0]
+    limite_gra = limite_peq + probs_tipo[1]
+
+    # Límites acumulados de probabilidad para el Tiempo de Estacionamiento
+    limite_1h = probs_tiempo[0]
+    limite_2h = limite_1h + probs_tiempo[1]
+    limite_3h = limite_2h + probs_tiempo[2]
     
     while reloj <= tiempo_x and posicion < max_iteraciones:
         posicion += 1
@@ -58,16 +66,10 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada):
             "estado_playa": estado_actual["estado_playa"],
             "capacidad_actual": estado_actual["capacidad_actual"],
             "estado_lugar_1": estado_actual["estado_lugar_1"],
-            "auto_en_cobro": (
-                estado_actual["auto_en_cobro"].copy()
-                if estado_actual["auto_en_cobro"] else None
-             ),
+            "auto_en_cobro": (estado_actual["auto_en_cobro"].copy() if estado_actual["auto_en_cobro"] else None),
             "fin_cobro_lugar_1": estado_actual["fin_cobro_lugar_1"],
             "estado_lugar_2": estado_actual["estado_lugar_2"],
-            "auto_esperando": (
-                estado_actual["auto_esperando"].copy()
-                if estado_actual["auto_esperando"] else None
-            ),
+            "auto_esperando": (estado_actual["auto_esperando"].copy() if estado_actual["auto_esperando"] else None),
             "cola_bloqueados": estado_actual["cola_bloqueados"].copy(),
             "sectores": {k: v.copy() for k, v in estado_actual["sectores"].items()},
             "cant_vehiculos_llegados": estado_actual["cant_vehiculos_llegados"],
@@ -79,7 +81,6 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada):
             "cant_autos_bloqueados_total": estado_actual["cant_autos_bloqueados_total"]
         }
         
-        # Solo acumulamos la ocupación por el Método de las Áreas. El bloqueo ya NO se calcula acá.
         for sec_id, sec_data in estado_actual["sectores"].items():
             if sec_data["estado"] == "Estacionado":
                 nueva_fila["acumulador_tiempo_ocupacion"] += delta_t
@@ -95,17 +96,23 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada):
                 
                 rnd_t = random.random()
                 nueva_fila["rnd_tipo"] = round(rnd_t, 4)
-                if rnd_t < 0.45: tipo = "Pequeño"
-                elif rnd_t < 0.70: tipo = "Grande"
+                
+                # --- APLICACIÓN DE PARÁMETROS DINÁMICOS PARA TIPO ---
+                if rnd_t < limite_peq: tipo = "Pequeño"
+                elif rnd_t < limite_gra: tipo = "Grande"
                 else: tipo = "Utilitario"
+                
                 nueva_fila["tipo_vehiculo"] = f"Auto {contador_autos_global} ({tipo[:3]})"
                 
                 rnd_e = random.random()
                 nueva_fila["rnd_tiempo_est"] = round(rnd_e, 4)
-                if rnd_e < 0.50: hs = 1
-                elif rnd_e < 0.80: hs = 2
-                elif rnd_e < 0.95: hs = 3
+                
+                # --- APLICACIÓN DE PARÁMETROS DINÁMICOS PARA TIEMPO ---
+                if rnd_e < limite_1h: hs = 1
+                elif rnd_e < limite_2h: hs = 2
+                elif rnd_e < limite_3h: hs = 3
                 else: hs = 4
+                
                 fin_estacionamiento = round(reloj + (hs * 60), 2)
                 nueva_fila["tiempo_est"] = hs
                 nueva_fila["sectores"][sector_libre] = {
@@ -123,40 +130,25 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada):
                 
         elif "Fin_Est_" in evento_nombre:
             sector_id = int(evento_nombre.split("_")[-1])
-
             auto_tipo = nueva_fila["sectores"][sector_id]["tipo_auto"]
             horas = nueva_fila["sectores"][sector_id]["horas_est"]
             id_del_auto = nueva_fila["sectores"][sector_id]["id_auto"]
 
-            auto = {
-                "id": id_del_auto,
-                "tipo": auto_tipo,
-                "horas": horas
-            }
+            auto = {"id": id_del_auto, "tipo": auto_tipo, "horas": horas}
 
             if nueva_fila["estado_lugar_1"] == "Libre":
                 nueva_fila["estado_lugar_1"] = "Ocupado"
                 nueva_fila["auto_en_cobro"] = auto
                 nueva_fila["fin_cobro_lugar_1"] = round(reloj + 2.0, 2)
-
-                nueva_fila["sectores"][sector_id] = {
-                    "estado": "Libre", "fin": None, "tipo_auto": "-",
-                    "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None
-                }
+                nueva_fila["sectores"][sector_id] = {"estado": "Libre", "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None}
                 nueva_fila["capacidad_actual"] -= 1
 
             elif nueva_fila["estado_lugar_2"] == "Libre":
                 nueva_fila["estado_lugar_2"] = "Ocupado"
                 nueva_fila["auto_esperando"] = auto
-
-                nueva_fila["sectores"][sector_id] = {
-                    "estado": "Libre", "fin": None, "tipo_auto": "-",
-                    "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None
-                }
+                nueva_fila["sectores"][sector_id] = {"estado": "Libre", "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None}
                 nueva_fila["capacidad_actual"] -= 1
-
             else:
-                # El auto pasa a estado bloqueado: guardamos la marca de tiempo
                 nueva_fila["sectores"][sector_id]["estado"] = "Bloqueado"
                 nueva_fila["sectores"][sector_id]["inicio_bloqueo"] = reloj
                 nueva_fila["cola_bloqueados"].append(sector_id)
@@ -178,26 +170,15 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada):
 
                 if nueva_fila["cola_bloqueados"]:
                     sec_desbloqueado = nueva_fila["cola_bloqueados"].pop(0)
-
-                    # CALCULO DE LA ESPERA: solo al finalizar el bloqueo
                     hora_inicio_b = nueva_fila["sectores"][sec_desbloqueado]["inicio_bloqueo"]
                     if hora_inicio_b is not None:
                         tiempo_esperado = reloj - hora_inicio_b
                         nueva_fila["acumulador_tiempo_bloqueo"] += tiempo_esperado
 
-                    auto_desbloqueado = {
-                        "id": nueva_fila["sectores"][sec_desbloqueado]["id_auto"],
-                        "tipo": nueva_fila["sectores"][sec_desbloqueado]["tipo_auto"],
-                        "horas": nueva_fila["sectores"][sec_desbloqueado]["horas_est"]
-                    }
-
+                    auto_desbloqueado = {"id": nueva_fila["sectores"][sec_desbloqueado]["id_auto"], "tipo": nueva_fila["sectores"][sec_desbloqueado]["tipo_auto"], "horas": nueva_fila["sectores"][sec_desbloqueado]["horas_est"]}
                     nueva_fila["auto_esperando"] = auto_desbloqueado
                     nueva_fila["estado_lugar_2"] = "Ocupado"
-
-                    nueva_fila["sectores"][sec_desbloqueado] = {
-                        "estado": "Libre", "fin": None, "tipo_auto": "-",
-                        "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None
-                    }
+                    nueva_fila["sectores"][sec_desbloqueado] = {"estado": "Libre", "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None}
                     nueva_fila["capacidad_actual"] -= 1
             else:
                 nueva_fila["estado_lugar_1"] = "Libre"
@@ -205,11 +186,7 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada):
                 nueva_fila["fin_cobro_lugar_1"] = None
                 
         nueva_fila["estado_playa"] = "Llena" if nueva_fila["capacidad_actual"] == 10 else "Libre"
-        nueva_fila["estado_lugar_2"] = (
-            "Ocupado"
-            if nueva_fila["auto_esperando"] is not None
-            else "Libre"
-        )
+        nueva_fila["estado_lugar_2"] = "Ocupado" if nueva_fila["auto_esperando"] is not None else "Libre"
             
         historial_vector.append(nueva_fila)
         estado_actual = nueva_fila
