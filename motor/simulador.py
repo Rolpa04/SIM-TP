@@ -20,7 +20,8 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, tiempo_co
         "estado_lugar_2": "Libre", 
         "auto_esperando": None,
         
-        "sectores": {i: {"estado": "Libre", "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None} for i in range(1, 11)},
+        # --- SE AGREGA 'inicio: None' EN LA INICIALIZACIÓN ---
+        "sectores": {i: {"estado": "Libre", "inicio": None, "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None} for i in range(1, 11)},
         "cant_vehiculos_llegados": 0, "cant_vehiculos_rechazados": 0,
         "monto_cobrado": "-", 
         "recaudacion_total": 0.0,
@@ -62,7 +63,7 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, tiempo_co
             "posicion": posicion, "evento": evento_nombre, "reloj": round(reloj, 2),
             "rnd_tipo": "-", "tipo_vehiculo": "-", "rnd_tiempo_est": "-", "tiempo_est": "-",
             "proxima_llegada": estado_actual["proxima_llegada"],
-            "tiempo_entre_llegadas": estado_actual["tiempo_entre_llegadas"],
+            "tiempo_entre_llegadas": "-",
             "estado_playa": estado_actual["estado_playa"],
             "capacidad_actual": estado_actual["capacidad_actual"],
             "estado_lugar_1": estado_actual["estado_lugar_1"],
@@ -115,8 +116,11 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, tiempo_co
                 
                 fin_estacionamiento = round(reloj + (hs * 60), 2)
                 nueva_fila["tiempo_est"] = hs
+                
+                # --- SE GUARDA LA HORA DE INICIO ---
                 nueva_fila["sectores"][sector_libre] = {
                     "estado": "Estacionado",
+                    "inicio": round(reloj, 2),
                     "fin": fin_estacionamiento,
                     "tipo_auto": tipo,
                     "horas_est": hs,
@@ -140,13 +144,15 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, tiempo_co
                 nueva_fila["estado_lugar_1"] = "Ocupado"
                 nueva_fila["auto_en_cobro"] = auto
                 nueva_fila["fin_cobro_lugar_1"] = round(reloj + tiempo_cobro, 2)
-                nueva_fila["sectores"][sector_id] = {"estado": "Libre", "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None}
+                # --- SE RESETEA EL INICIO AL LIBERAR EL SECTOR ---
+                nueva_fila["sectores"][sector_id] = {"estado": "Libre", "inicio": None, "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None}
                 nueva_fila["capacidad_actual"] -= 1
 
             elif nueva_fila["estado_lugar_2"] == "Libre":
                 nueva_fila["estado_lugar_2"] = "Ocupado"
                 nueva_fila["auto_esperando"] = auto
-                nueva_fila["sectores"][sector_id] = {"estado": "Libre", "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None}
+                # --- SE RESETEA EL INICIO AL LIBERAR EL SECTOR ---
+                nueva_fila["sectores"][sector_id] = {"estado": "Libre", "inicio": None, "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None}
                 nueva_fila["capacidad_actual"] -= 1
             else:
                 nueva_fila["sectores"][sector_id]["estado"] = "Bloqueado"
@@ -178,7 +184,8 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, tiempo_co
                     auto_desbloqueado = {"id": nueva_fila["sectores"][sec_desbloqueado]["id_auto"], "tipo": nueva_fila["sectores"][sec_desbloqueado]["tipo_auto"], "horas": nueva_fila["sectores"][sec_desbloqueado]["horas_est"]}
                     nueva_fila["auto_esperando"] = auto_desbloqueado
                     nueva_fila["estado_lugar_2"] = "Ocupado"
-                    nueva_fila["sectores"][sec_desbloqueado] = {"estado": "Libre", "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None}
+                    # --- SE RESETEA EL INICIO AL LIBERAR EL SECTOR ---
+                    nueva_fila["sectores"][sec_desbloqueado] = {"estado": "Libre", "inicio": None, "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None}
                     nueva_fila["capacidad_actual"] -= 1
             else:
                 nueva_fila["estado_lugar_1"] = "Libre"

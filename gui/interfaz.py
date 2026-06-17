@@ -53,7 +53,7 @@ class AppSimulacion(ctk.CTk):
             background=BG_CARD,
             foreground=TEXT2,
             fieldbackground=BG_CARD,
-            rowheight=24,
+            rowheight=32, # <--- AUMENTAMOS EL ALTO DE LAS FILAS PARA DAR MÁS AIRE
             borderwidth=0,
             relief="flat",
             font=("JetBrains Mono", 9) if self._font_exists("JetBrains Mono") else ("Courier New", 9),
@@ -238,8 +238,8 @@ class AppSimulacion(ctk.CTk):
             entry = ctk.CTkEntry(
                 row_frame,
                 height=30,
-                width=40,         # <--- CORRECCIÓN: Ancho base pequeño para evitar el desborde
-                justify="center", # <--- CORRECCIÓN: Centramos el texto para que se vea mejor
+                width=40,         
+                justify="center", 
                 corner_radius=6,
                 border_width=1,
                 border_color=BORDER,
@@ -248,13 +248,12 @@ class AppSimulacion(ctk.CTk):
                 font=ctk.CTkFont(size=11, family="Courier New"),
             )
             entry.insert(0, default)
-            entry.pack(side="left", expand=True, fill="x", padx=2) # padx=2 separa un poquito las cajas
+            entry.pack(side="left", expand=True, fill="x", padx=2) 
             entries.append(entry)
         return entries
 
     # ── Tabla ─────────────────────────────────────────────────────────────────
     def _build_table(self, parent):
-        # Se agrega "cant_bloq" a la tupla base
         columnas_base = (
             "pos", "evento", "reloj", "rnd_t", "tipo",
             "rnd_e", "t_est", "tmp_lleg", "prox_lleg",
@@ -286,37 +285,39 @@ class AppSimulacion(ctk.CTk):
         scroll_y.pack(side="right",  fill="y")
         self.tabla.pack(fill="both", expand=True)
 
+        # --- ENSANCHAMOS TODAS LAS COLUMNAS UN 15% - 20% ---
         encabezados = {
-            "pos":           ("N° Fila",              60),
-            "evento":        ("Evento",               120),
-            "reloj":         ("Reloj (min)",           90),
-            "rnd_t":         ("RND Tipo",              80),
-            "tipo":          ("Tipo / Id Auto",        120),
-            "rnd_e":         ("RND Est.",              80),
-            "t_est":         ("Tiempo Est.",           85),
-            "tmp_lleg":      ("T. Entre Llegadas",     110),
-            "prox_lleg":     ("Próx. Llegada",         100),
-            "est_playa":     ("Playa",                 80),
-            "cap":           ("Cant. Autos",           85),
-            "caja1":         ("Servidor",              85),
-            "auto_cobro":    ("AUTO EN COBRO",         160),
-            "fin_cobro":     ("Fin Cobro",             90),
-            "caja2":         ("Espacio Cola",          95),
-            "cola":          ("AUTO EN COLA",          160),
-            "monto_cobrado": ("Tarifa Vehículo",       110),
-            "recaudacion":   ("Recaudación Acum.",     130),
-            "acum_bloqueo":  ("Tiempo Bloq. Acum.",    130),
-            "cant_bloq":     ("Cant. Bloqueados",      120),
+            "pos":           ("N° Fila",              70),
+            "evento":        ("Evento",               140),
+            "reloj":         ("Reloj (min)",          100),
+            "rnd_t":         ("RND Tipo",              90),
+            "tipo":          ("Tipo / Id Auto",       140),
+            "rnd_e":         ("RND Est.",              90),
+            "t_est":         ("Tiempo Est.",          100),
+            "tmp_lleg":      ("T. Entre Llegadas",    130),
+            "prox_lleg":     ("Próx. Llegada",        110),
+            "est_playa":     ("Playa",                 90),
+            "cap":           ("Cant. Autos",           95),
+            "caja1":         ("Servidor",              95),
+            "auto_cobro":    ("AUTO EN COBRO",        180),
+            "fin_cobro":     ("Fin Cobro",            100),
+            "caja2":         ("Espacio Cola",         105),
+            "cola":          ("AUTO EN COLA",         180),
+            "monto_cobrado": ("Tarifa Vehículo",      120),
+            "recaudacion":   ("Recaudación Acum.",    150),
+            "acum_bloqueo":  ("Tiempo Bloq. Acum.",   150),
+            "cant_bloq":     ("Cant. Bloqueados",     130),
         }
 
         for col, (texto, w) in encabezados.items():
             self.tabla.heading(col, text=texto)
             self.tabla.column(col, width=w, minwidth=w, anchor="center")
 
+        # --- ENSANCHAMOS AÚN MÁS LOS SECTORES ---
         for i in range(1, 11):
             col_name = f"sec_{i}"
-            self.tabla.heading(col_name, text=f"Sector {i}")
-            self.tabla.column(col_name, width=155, minwidth=120, anchor="center")
+            self.tabla.heading(col_name, text=f"Sector {i}",anchor="w")
+            self.tabla.column(col_name, width=320, minwidth=240, anchor="center")
 
         # Tags de color por evento
         self.tabla.tag_configure("tag_llegada",   foreground=TAG_LLEGADA)
@@ -457,7 +458,6 @@ class AppSimulacion(ctk.CTk):
             monto_f = f"${f['monto_cobrado']:.2f}" if isinstance(f.get("monto_cobrado"), (int, float)) else "-"
             recaud_f = f"${f['recaudacion_total']:.2f}"
             
-            # Se agrega la variable "cant_autos_bloqueados_total" al final del array
             valores_fila = [
                 f["posicion"], f["evento"], f["reloj"],
                 f["rnd_tipo"], f["tipo_vehiculo"],
@@ -468,15 +468,16 @@ class AppSimulacion(ctk.CTk):
                 fc, f["estado_lugar_2"], auto_espera,
                 monto_f, recaud_f,
                 f"{f['acumulador_tiempo_bloqueo']:.2f}",
-                f["cant_autos_bloqueados_total"] # <--- NUEVO CONTADOR VISIBLE
+                f["cant_autos_bloqueados_total"] 
             ]
 
+            # --- SE AGREGA EL SEPARADOR VISUAL ' | ' ---
             for i in range(1, 11):
                 sec = f["sectores"][i]
                 if sec["estado"] == "Estacionado":
-                    texto_celda = f"{sec['id_auto']} [{sec['tipo_auto'][:3]}] F:{sec['fin']}"
+                    texto_celda = f"{sec['id_auto']} [{sec['tipo_auto'][:3]}]   |   I: {sec['inicio']}   F: {sec['fin']}"
                 elif sec["estado"] == "Bloqueado":
-                    texto_celda = f"{sec['id_auto']} BLOQUEADO"
+                    texto_celda = f"{sec['id_auto']}   |   BLOQUEADO"
                 else:
                     texto_celda = "Libre"
                 valores_fila.append(texto_celda)
@@ -600,8 +601,9 @@ class AppSimulacion(ctk.CTk):
                              text=f"{datos['id_auto']}  ({datos['tipo_auto']})",
                              font=ctk.CTkFont(size=10),
                              text_color=TEXT2, width=160, anchor="w").pack(side="left")
+                
                 ctk.CTkLabel(row,
-                             text=f"Fin: {datos['fin']} min",
+                             text=f"I:{datos['inicio']} F:{datos['fin']}",
                              font=ctk.CTkFont(size=10, family="Courier New"),
                              text_color=TEXT2).pack(side="left", padx=(0, 12))
 
