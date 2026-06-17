@@ -1,7 +1,7 @@
 import random
 import math
 
-def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, probs_tipo, probs_tiempo):
+def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, tiempo_cobro, probs_tipo, probs_tiempo):
     reloj = 0.0
     posicion = 0
     contador_autos_global = 0  
@@ -139,7 +139,7 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, probs_tip
             if nueva_fila["estado_lugar_1"] == "Libre":
                 nueva_fila["estado_lugar_1"] = "Ocupado"
                 nueva_fila["auto_en_cobro"] = auto
-                nueva_fila["fin_cobro_lugar_1"] = round(reloj + 2.0, 2)
+                nueva_fila["fin_cobro_lugar_1"] = round(reloj + tiempo_cobro, 2)
                 nueva_fila["sectores"][sector_id] = {"estado": "Libre", "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None}
                 nueva_fila["capacidad_actual"] -= 1
 
@@ -166,7 +166,7 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, probs_tip
                 nueva_fila["auto_en_cobro"] = nueva_fila["auto_esperando"]
                 nueva_fila["auto_esperando"] = None
                 nueva_fila["estado_lugar_2"] = "Libre"
-                nueva_fila["fin_cobro_lugar_1"] = round(reloj + 2.0, 2)
+                nueva_fila["fin_cobro_lugar_1"] = round(reloj + tiempo_cobro, 2)
 
                 if nueva_fila["cola_bloqueados"]:
                     sec_desbloqueado = nueva_fila["cola_bloqueados"].pop(0)

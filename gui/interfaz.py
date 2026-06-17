@@ -119,7 +119,8 @@ class AppSimulacion(ctk.CTk):
         self.entry_j = self._input(cfg_frame, "Mostrar desde minuto (j)", "0")
         self.entry_i = self._input(cfg_frame, "Cantidad de filas (i)", "50")
         self.entry_tlleg = self._input(cfg_frame, "Tiempo entre llegadas (min)", "13")
-        #corregidos
+        self.entry_tcobro = self._input(cfg_frame, "Tiempo de cobro (min)", "2")
+        
         self.entradas_prob_tipo = self._input_row(cfg_frame, "Prob. Auto (%) [Peq/Gra/Uti]", ["45", "25", "30"])
         self.entradas_prob_tiempo = self._input_row(cfg_frame, "Prob. Hs (%) [1h/2h/3h/4h]", ["50", "30", "15", "5"])
 
@@ -251,28 +252,6 @@ class AppSimulacion(ctk.CTk):
             entries.append(entry)
         return entries
 
-        ctk.CTkLabel(parent, text=label,
-                     font=ctk.CTkFont(size=10), text_color=TEXT2).pack(anchor="w", pady=(4, 0))
-        row_frame = ctk.CTkFrame(parent, fg_color="transparent")
-        row_frame.pack(fill="x", pady=(0, 2))
-
-        entries = []
-        for default in defaults:
-            entry = ctk.CTkEntry(
-                row_frame,
-                height=30,
-                corner_radius=6,
-                border_width=1,
-                border_color=BORDER,
-                fg_color=BG_INPUT,
-                text_color=TEXT,
-                font=ctk.CTkFont(size=11, family="Courier New"),
-            )
-            entry.insert(0, default)
-            entry.pack(side="left", expand=True, fill="x", padx=1)
-            entries.append(entry)
-        return entries
-
     # ── Tabla ─────────────────────────────────────────────────────────────────
     def _build_table(self, parent):
         # Se agrega "cant_bloq" a la tupla base
@@ -394,6 +373,9 @@ class AppSimulacion(ctk.CTk):
         t_lleg, errs = self._validar_campo(self.entry_tlleg, "Tiempo entre llegadas")
         errores_totales.extend(errs)
 
+        t_cobro, errs = self._validar_campo(self.entry_tcobro, "Tiempo de cobro", permite_cero=True)
+        errores_totales.extend(errs)
+
         # --- VALIDAR PROB. TIPOS DE AUTO ---
         probs_tipo_num = []
         nombres_tipo = ["Prob Peq", "Prob Gra", "Prob Uti"]
@@ -429,6 +411,7 @@ class AppSimulacion(ctk.CTk):
         j = float(j)
         i_filas = int(i_val)
         t_lleg = float(t_lleg)
+        t_cobro = float(t_cobro)
         
         # Convertir a decimales para el motor
         probs_tipo_dec = [p / 100.0 for p in probs_tipo_num]
@@ -439,13 +422,11 @@ class AppSimulacion(ctk.CTk):
         self.update()
 
         # --- LLAMADA AL MOTOR ACTUALIZADA ---
-        self.vector_completo = correr_simulacion_playa(x, n, t_lleg, probs_tipo_dec, probs_tiempo_dec)
+        self.vector_completo = correr_simulacion_playa(x, n, t_lleg, t_cobro, probs_tipo_dec, probs_tiempo_dec)
         
         for item in self.tabla.get_children():
             self.tabla.delete(item)
             
-        # ... (Sigue igual a partir de la lógica de filtrado de filas) ...
-
         # Filtrar filas
         filas_filtradas = []
         contador = 0
