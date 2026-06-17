@@ -63,7 +63,7 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, tiempo_co
             "posicion": posicion, "evento": evento_nombre, "reloj": round(reloj, 2),
             "rnd_tipo": "-", "tipo_vehiculo": "-", "rnd_tiempo_est": "-", "tiempo_est": "-",
             "proxima_llegada": estado_actual["proxima_llegada"],
-            "tiempo_entre_llegadas": "-",
+            "tiempo_entre_llegadas": "-", # <-- Por defecto no se muestra el tiempo entre llegadas
             "estado_playa": estado_actual["estado_playa"],
             "capacidad_actual": estado_actual["capacidad_actual"],
             "estado_lugar_1": estado_actual["estado_lugar_1"],
@@ -88,6 +88,7 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, tiempo_co
         
         if evento_nombre == "Llegada":
             nueva_fila["cant_vehiculos_llegados"] += 1
+            # <-- Solo en la llegada se registra el tiempo entre llegadas que provocó el evento
             nueva_fila["tiempo_entre_llegadas"] = tiempo_llegada
             nueva_fila["proxima_llegada"] = round(reloj + tiempo_llegada, 2)
             
@@ -155,10 +156,10 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, tiempo_co
                 nueva_fila["sectores"][sector_id] = {"estado": "Libre", "inicio": None, "fin": None, "tipo_auto": "-", "horas_est": 0, "id_auto": "-", "inicio_bloqueo": None}
                 nueva_fila["capacidad_actual"] -= 1
             else:
+                # --- SE MARCA COMO BLOQUEADO PERO NO SE SUMA AL CONTADOR ESTADÍSTICO AÚN ---
                 nueva_fila["sectores"][sector_id]["estado"] = "Bloqueado"
                 nueva_fila["sectores"][sector_id]["inicio_bloqueo"] = reloj
                 nueva_fila["cola_bloqueados"].append(sector_id)
-                nueva_fila["cant_autos_bloqueados_total"] += 1
 
         elif evento_nombre == "Fin_Cobro":
             auto_cobrado = nueva_fila["auto_en_cobro"]
@@ -180,6 +181,9 @@ def correr_simulacion_playa(tiempo_x, max_iteraciones, tiempo_llegada, tiempo_co
                     if hora_inicio_b is not None:
                         tiempo_esperado = reloj - hora_inicio_b
                         nueva_fila["acumulador_tiempo_bloqueo"] += tiempo_esperado
+                        
+                        # --- SE SUMA EL CONTADOR ESTADÍSTICO AL MOMENTO DE DESBLOQUEAR Y PROCESAR EL TIEMPO ---
+                        nueva_fila["cant_autos_bloqueados_total"] += 1
 
                     auto_desbloqueado = {"id": nueva_fila["sectores"][sec_desbloqueado]["id_auto"], "tipo": nueva_fila["sectores"][sec_desbloqueado]["tipo_auto"], "horas": nueva_fila["sectores"][sec_desbloqueado]["horas_est"]}
                     nueva_fila["auto_esperando"] = auto_desbloqueado
