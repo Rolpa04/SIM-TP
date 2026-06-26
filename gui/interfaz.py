@@ -189,8 +189,7 @@ class AppSimulacion(ctk.CTk):
         legend.pack(fill="x")
         legend.pack_propagate(False)
         for txt, color in [("● Llegada", TAG_LLEGADA), ("● Fin Estacionamiento", TAG_FIN_EST),
-                           ("● Fin Cobro", TAG_FIN_COBRO), ("● Bloqueado", TAG_BLOQUEADO),
-                           ("● Rechazado", TAG_RECHAZADO), ("● Inicio", TAG_INICIO)]:
+                           ("● Fin Cobro", TAG_FIN_COBRO), ("● Inicio", TAG_INICIO)]:
             ctk.CTkLabel(legend, text=txt, font=ctk.CTkFont(size=9),
                          text_color=color).pack(side="left", padx=10)
 
