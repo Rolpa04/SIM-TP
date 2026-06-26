@@ -90,6 +90,7 @@ class AppSimulacion(ctk.CTk):
                                     fg_color=BG_MID, border_width=0)
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
+        
 
         # Título sidebar
         title_frame = ctk.CTkFrame(self.sidebar, fg_color=BG_DARK, corner_radius=0)
@@ -329,7 +330,6 @@ class AppSimulacion(ctk.CTk):
         self.tabla.tag_configure("row_odd",       background="#191f2e")
         self.tabla.tag_configure("row_even",      background=BG_CARD)
 
-        self.tabla.bind("<ButtonRelease-1>", self.on_fila_clic)
 
     # ── Validar un campo numérico ─────────────────────────────────────────────
     def _validar_campo(self, entry, nombre, permite_cero=False):
@@ -477,7 +477,7 @@ class AppSimulacion(ctk.CTk):
                 if sec["estado"] == "Estacionado":
                     texto_celda = f"{sec['id_auto']} [{sec['tipo_auto'][:3]}]   |   I: {sec['inicio']}   F: {sec['fin']}"
                 elif sec["estado"] == "Bloqueado":
-                    texto_celda = f"{sec['id_auto']}   |   BLOQUEADO"
+                    texto_celda = f"{sec['id_auto']}  [{sec['tipo_auto'][:3]}]  {sec['horas_est']}h  |   BLOQUEADO {sec['inicio_bloqueo']} "
                 else:
                     texto_celda = "Libre"
                 valores_fila.append(texto_celda)
@@ -537,112 +537,5 @@ class AppSimulacion(ctk.CTk):
         )
         self.btn_simular.configure(state="normal", text="▶   Correr Simulación")
 
-    # ── Detalle al hacer clic en una fila ─────────────────────────────────────
-    def on_fila_clic(self, event):
-        item_id = self.tabla.focus()
-        if not item_id:
-            return
-        fila_selec = next(
-            (f for f in self.vector_completo if str(f["posicion"]) == item_id), None
-        )
-        if not fila_selec:
-            return
-
-        ventana = ctk.CTkToplevel(self)
-        ventana.title(f"Detalle — Fila {fila_selec['posicion']}")
-        ventana.geometry("540x420")
-        ventana.attributes("-topmost", True)
-        ventana.configure(fg_color=BG_DARK)
-        ventana.resizable(False, False)
-
-        # Header
-        header = ctk.CTkFrame(ventana, fg_color=BG_MID, corner_radius=0, height=52)
-        header.pack(fill="x")
-        header.pack_propagate(False)
-        ctk.CTkLabel(header,
-                     text=f"Fila {fila_selec['posicion']}  ·  {fila_selec['evento']}  ·  Reloj: {fila_selec['reloj']} min",
-                     font=ctk.CTkFont(size=12, weight="bold"),
-                     text_color=ACCENT).pack(side="left", padx=16, pady=14)
-
-        ctk.CTkFrame(ventana, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
-
-        # Contenido
-        scroll_frame = ctk.CTkScrollableFrame(ventana, fg_color=BG_DARK, corner_radius=0)
-        scroll_frame.pack(fill="both", expand=True, padx=0, pady=0)
-
-        ctk.CTkLabel(scroll_frame,
-                     text="ESTADO DE SECTORES",
-                     font=ctk.CTkFont(size=9, weight="bold"),
-                     text_color=MUTED).pack(anchor="w", padx=20, pady=(14, 6))
-
-        algun_ocupado = False
-        for sec_id, datos in fila_selec["sectores"].items():
-            if datos["estado"] != "Libre":
-                algun_ocupado = True
-                if datos["estado"] == "Bloqueado":
-                    color = TAG_BLOQUEADO
-                    icono = "⚠"
-                else:
-                    color = TAG_FIN_EST
-                    icono = "🚗"
-
-                row = ctk.CTkFrame(scroll_frame, fg_color=BG_CARD, corner_radius=6)
-                row.pack(fill="x", padx=16, pady=3)
-
-                ctk.CTkLabel(row,
-                             text=f"  {icono}  Sector {sec_id}",
-                             font=ctk.CTkFont(size=11, weight="bold"),
-                             text_color=color, width=110, anchor="w").pack(side="left", padx=(10, 0), pady=8)
-                ctk.CTkLabel(row,
-                             text=f"{datos['estado']}",
-                             font=ctk.CTkFont(size=10),
-                             text_color=color, width=90, anchor="w").pack(side="left")
-                ctk.CTkLabel(row,
-                             text=f"{datos['id_auto']}  ({datos['tipo_auto']})",
-                             font=ctk.CTkFont(size=10),
-                             text_color=TEXT2, width=160, anchor="w").pack(side="left")
-                
-                ctk.CTkLabel(row,
-                             text=f"I:{datos['inicio']} F:{datos['fin']}",
-                             font=ctk.CTkFont(size=10, family="Courier New"),
-                             text_color=TEXT2).pack(side="left", padx=(0, 12))
-
-        if not algun_ocupado:
-            ctk.CTkLabel(scroll_frame,
-                         text="Todos los sectores están libres en este instante.",
-                         font=ctk.CTkFont(size=11),
-                         text_color=MUTED).pack(pady=30)
-
-        # Info de cobro
-        ctk.CTkFrame(scroll_frame, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x", padx=16, pady=(12, 6))
-        ctk.CTkLabel(scroll_frame,
-                     text="ZONA DE COBRO",
-                     font=ctk.CTkFont(size=9, weight="bold"),
-                     text_color=MUTED).pack(anchor="w", padx=20, pady=(0, 6))
-
-        cobro_row = ctk.CTkFrame(scroll_frame, fg_color=BG_CARD, corner_radius=6)
-        cobro_row.pack(fill="x", padx=16, pady=(0, 16))
-        cobro_row.columnconfigure((0, 1, 2), weight=1)
-
-        for col, (lbl, val) in enumerate([
-            ("Caja (Lugar 1)", fila_selec["estado_lugar_1"]),
-            (
-                "Auto en Cobro",
-                f"{fila_selec['auto_en_cobro']['id']} ({fila_selec['auto_en_cobro']['tipo'][:3]}) {fila_selec['auto_en_cobro']['horas']}h"
-                if fila_selec["auto_en_cobro"] is not None
-                else "-"
-            ),
-            (
-                "Auto en Cola",
-                f"{fila_selec['auto_esperando']['id']} ({fila_selec['auto_esperando']['tipo'][:3]}) {fila_selec['auto_esperando']['horas']}h"
-                if fila_selec["auto_esperando"] is not None
-                else "-"
-            ),
-        ]):
-            cell = ctk.CTkFrame(cobro_row, fg_color="transparent")
-            cell.grid(row=0, column=col, padx=14, pady=10, sticky="w")
-            ctk.CTkLabel(cell, text=lbl,
-                         font=ctk.CTkFont(size=9), text_color=MUTED).pack(anchor="w")
-            ctk.CTkLabel(cell, text=val,
-                         font=ctk.CTkFont(size=12, weight="bold"),
-                         text_color=SKY).pack(anchor="w")
+   
+    
