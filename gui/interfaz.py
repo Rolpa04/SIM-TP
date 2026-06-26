@@ -90,10 +90,11 @@ class AppSimulacion(ctk.CTk):
                                     fg_color=BG_MID, border_width=0)
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
-        
+        self.sidebar_scroll = ctk.CTkScrollableFrame(self.sidebar, fg_color="transparent", corner_radius=0)
+        self.sidebar_scroll.pack(fill="both", expand=True)
 
         # Título sidebar
-        title_frame = ctk.CTkFrame(self.sidebar, fg_color=BG_DARK, corner_radius=0)
+        title_frame = ctk.CTkFrame(self.sidebar_scroll, fg_color=BG_DARK, corner_radius=0)
         title_frame.pack(fill="x")
         ctk.CTkLabel(title_frame, text="🅿", font=ctk.CTkFont(size=28),
                      text_color=ACCENT).pack(pady=(20, 0))
@@ -108,7 +109,7 @@ class AppSimulacion(ctk.CTk):
         ctk.CTkFrame(self.sidebar, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
 
         # Configuración
-        cfg_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        cfg_frame = ctk.CTkFrame(self.sidebar_scroll, fg_color="transparent")
         cfg_frame.pack(fill="x", padx=16, pady=8)
 
         ctk.CTkLabel(cfg_frame, text="PARÁMETROS",
@@ -125,10 +126,10 @@ class AppSimulacion(ctk.CTk):
         self.entradas_prob_tipo = self._input_row(cfg_frame, "Prob. Auto (%) [Peq/Gra/Uti]", ["45", "25", "30"])
         self.entradas_prob_tiempo = self._input_row(cfg_frame, "Prob. Hs (%) [1h/2h/3h/4h]", ["50", "30", "15", "5"])
 
-        ctk.CTkFrame(self.sidebar, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
+        ctk.CTkFrame(self.sidebar_scroll, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
 
         # Botón
-        btn_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        btn_frame = ctk.CTkFrame(self.sidebar_scroll, fg_color="transparent")
         btn_frame.pack(fill="x", padx=16, pady=10)
         self.btn_simular = ctk.CTkButton(
             btn_frame,
@@ -143,10 +144,10 @@ class AppSimulacion(ctk.CTk):
         )
         self.btn_simular.pack(fill="x")
 
-        ctk.CTkFrame(self.sidebar, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
+        ctk.CTkFrame(self.sidebar_scroll, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
 
         # Resultados
-        res_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        res_frame = ctk.CTkFrame(self.sidebar_scroll, fg_color="transparent")
         res_frame.pack(fill="x", padx=16, pady=10)
 
         ctk.CTkLabel(res_frame, text="RESULTADOS FINALES",
