@@ -441,20 +441,20 @@ class AppSimulacion(ctk.CTk):
         if ultima_fila not in filas_filtradas:
             filas_filtradas.append(ultima_fila)
 
+        tarifas_por_tipo = {"Pequeño": 3000, "Grande": 4000, "Utilitario": 5000}
+
         for idx, f in enumerate(filas_filtradas):
             fc = f["fin_cobro_lugar_1"] if f["fin_cobro_lugar_1"] is not None else "-"
 
-            if f["auto_en_cobro"] is not None:
-                ac = f["auto_en_cobro"]
-                auto_cobro = f"{ac['id']} [{ac['tipo'][:3]}] {ac['horas']}h"
-            else:
-                auto_cobro = "-"
+            def formato_auto(auto):
+                if auto is None:
+                    return "-"
+                tarifa = tarifas_por_tipo.get(auto["tipo"])
+                tarifa_texto = f" $ {tarifa:,.0f}" if tarifa is not None else ""
+                return f"{auto['id']} [{auto['tipo'][:3]}] {auto['horas']}h{tarifa_texto}"
 
-            if f["auto_esperando"] is not None:
-                ae = f["auto_esperando"]
-                auto_espera = f"{ae['id']} [{ae['tipo'][:3]}] {ae['horas']}h"
-            else:
-                auto_espera = "-"
+            auto_cobro = formato_auto(f["auto_en_cobro"])
+            auto_espera = formato_auto(f["auto_esperando"])
 
             monto_f = f"${f['monto_cobrado']:.2f}" if isinstance(f.get("monto_cobrado"), (int, float)) else "-"
             recaud_f = f"${f['recaudacion_total']:.2f}"
@@ -476,9 +476,9 @@ class AppSimulacion(ctk.CTk):
             for i in range(1, 11):
                 sec = f["sectores"][i]
                 if sec["estado"] == "Estacionado":
-                    texto_celda = f"{sec['id_auto']} [{sec['tipo_auto'][:3]}]   |   I: {sec['inicio']}   F: {sec['fin']}"
+                    texto_celda = f"{sec['id_auto']} [{sec['tipo_auto'][:3]}]  I: {sec['inicio']}   F: {sec['fin']}"
                 elif sec["estado"] == "Bloqueado":
-                    texto_celda = f"{sec['id_auto']}  [{sec['tipo_auto'][:3]}]  {sec['horas_est']}h  |   BLOQUEADO {sec['inicio_bloqueo']} "
+                    texto_celda = f"{sec['id_auto']}  [{sec['tipo_auto'][:3]}]  {sec['horas_est']}h  |  BLOQUEADO {sec['inicio_bloqueo']} "
                 else:
                     texto_celda = "Libre"
                 valores_fila.append(texto_celda)
